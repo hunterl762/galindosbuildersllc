@@ -1,17 +1,27 @@
 Options -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Dynamic CMS pages: /page/about-us -> page.php?slug=about-us
-RewriteRule ^page/([a-zA-Z0-9-]+)/?$ page.php?slug=$1 [L,QSA]
+# Never rewrite real files or directories (assets, uploads, admin files, etc.).
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Redirect direct .php requests to clean URLs.
+# Dynamic CMS pages. This rule is relative to the folder containing this
+# .htaccess, so it works both at the domain root and in a subdirectory.
+# /page/about-us -> /page.php?slug=about-us
+RewriteRule ^page/([A-Za-z0-9-]+)/?$ page.php?slug=$1 [END,QSA,NC]
+
+# Redirect direct browser requests for public PHP files to clean URLs.
+# Do not redirect internal rewrites and do not alter admin PHP endpoints.
 RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[?\s]) [NC]
-RewriteRule ^(.+)\.php$ /$1 [R=301,L,NE]
+RewriteCond %{REQUEST_URI} !/admin/ [NC]
+RewriteRule ^(.+)\.php$ $1 [R=301,L,NE]
 
-# Internally route extensionless requests to existing PHP files.
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{DOCUMENT_ROOT}/$1.php -f
-RewriteRule ^(.+?)/?$ $1.php [L,QSA]
-
-DirectoryIndex index.php
+# Clean extensionless PHP routes such as /projects and /project.
+# REQUEST_FILENAME is used instead of DOCUMENT_ROOT so subdirectory installs work.
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [END,QSA]
+</IfModule>
