@@ -1,6 +1,9 @@
 Options -MultiViews
 RewriteEngine On
 
+# Dynamic CMS pages: /page/about-us -> page.php?slug=about-us
+RewriteRule ^page/([a-zA-Z0-9-]+)/?$ page.php?slug=$1 [L,QSA]
+
 # Redirect direct .php requests to clean URLs.
 RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[?\s]) [NC]
 RewriteRule ^(.+)\.php$ /$1 [R=301,L,NE]
@@ -11,5 +14,4 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{DOCUMENT_ROOT}/$1.php -f
 RewriteRule ^(.+?)/?$ $1.php [L,QSA]
 
-# Allow the homepage to continue using index.php internally.
 DirectoryIndex index.php
