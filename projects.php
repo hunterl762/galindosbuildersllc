@@ -1,0 +1,29 @@
+<?php
+require __DIR__.'/includes/app.php';
+$items=projects();
+$cats=array_values(array_unique(array_filter(array_map(fn($p)=>$p['category']??'', $items))));
+?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Projects | Galindos Builders LLC</title>
+<meta name="description" content="Explore framing and construction projects completed by Galindos Builders LLC.">
+<link rel="stylesheet" href="<?=e(asset_url('/assets/css/site.css'))?>">
+<script defer src="<?=e(asset_url('/assets/js/site.js'))?>"></script>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="<?=e(site_url('/'))?>"><span class="brand-mark">GB</span><span>GALINDOS <b>BUILDERS LLC</b></span></a>
+<button class="menu" aria-label="Open navigation">☰</button>
+<nav><?php foreach(tabs() as $tab):if(empty($tab['visible']))continue;?><a href="<?=e($tab['url'])?>"><?=e($tab['label'])?></a><?php endforeach;?><a class="nav-cta" href="<?=e(site_url('/#contact'))?>">Start a Project</a></nav>
+</header>
+<section class="page-hero"><p class="eyebrow">OUR WORK</p><h1>Projects</h1></section>
+<main class="projects-section">
+<div class="filters"><button class="filter active" data-filter="all">All</button><?php foreach($cats as $cat):?><button class="filter" data-filter="<?=e(slugify($cat))?>"><?=e($cat)?></button><?php endforeach;?></div>
+<div class="project-grid"><?php foreach($items as $p):$img=$p['images'][0]??'';?><a class="project-card" data-category="<?=e(slugify($p['category']??''))?>" href="<?=e(site_url('/project.php?job='.urlencode($p['slug'])))?>"><div class="project-image"<?php if($img):?> style="background-image:url('<?=e($img)?>')"<?php endif;?>></div><div><small><?=e($p['category']??'PROJECT')?></small><h3><?=e($p['name'])?></h3><p><?=e($p['location']??'')?></p></div></a><?php endforeach;?></div>
+<?php if(!$items):?><div class="empty-projects"><h3>No projects published yet.</h3><p>Projects added in the admin dashboard will appear here automatically.</p></div><?php endif;?>
+</main>
+<footer><div class="brand"><span class="brand-mark">GB</span><span>GALINDOS <b>BUILDERS LLC</b></span></div><p>Professional framing & construction.</p><p>© <?=date('Y')?> Galindos Builders LLC.</p></footer>
+</body></html>

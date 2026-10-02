@@ -1,0 +1,27 @@
+Options -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Never rewrite real files or directories (assets, uploads, admin files, etc.).
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Dynamic CMS pages. This rule is relative to the folder containing this
+# .htaccess, so it works both at the domain root and in a subdirectory.
+# /page/about-us -> /page.php?slug=about-us
+RewriteRule ^page/([A-Za-z0-9-]+)/?$ page.php?slug=$1 [END,QSA,NC]
+
+# Redirect direct browser requests for public PHP files to clean URLs.
+# Do not redirect internal rewrites and do not alter admin PHP endpoints.
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[?\s]) [NC]
+RewriteCond %{REQUEST_URI} !/admin/ [NC]
+RewriteRule ^(.+)\.php$ $1 [R=301,L,NE]
+
+# Clean extensionless PHP routes such as /projects and /project.
+# REQUEST_FILENAME is used instead of DOCUMENT_ROOT so subdirectory installs work.
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [END,QSA]
+</IfModule>
