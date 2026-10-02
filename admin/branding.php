@@ -1,0 +1,20 @@
+<?php
+require dirname(__DIR__).'/includes/app.php';
+require_admin();
+$notice='';$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ verify_csrf();
+ if(($_POST['action']??'')==='save_branding'){
+  $settings=branding_settings();
+  foreach(['site_name','favicon_url','meta_image_url','header_logo_url'] as $k)$settings[$k]=trim((string)($_POST[$k]??$settings[$k]??''));
+  foreach(['favicon'=>'favicon_url','meta_image'=>'meta_image_url','header_logo'=>'header_logo_url'] as $field=>$key){
+   if(!empty($_FILES[$field]['tmp_name'])&&($_FILES[$field]['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_OK){
+    $url=save_branding_image($_FILES[$field],$field==='favicon');
+    if($url)$settings[$key]=$url;else $error='One or more images could not be uploaded. Use PNG, JPG, WEBP, GIF, SVG or ICO files under 5 MB.';
+   }
+  }
+  if(save_branding_settings($settings))$notice='Branding settings saved.';else $error='Branding settings could not be saved to SQL.';
+ }
+}
+$b=branding_settings();
+?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Website Branding</title><link rel="stylesheet" href="<?=e(asset_url('/admin/admin.css'))?>"></head><body><aside><div class="admin-logo">GB</div><h2>Galindos Builders</h2><a href="<?=e(site_url('/admin/'))?>">Dashboard</a><a href="<?=e(site_url('/admin/pages.php'))?>">Custom Pages</a><a href="<?=e(site_url('/admin/content.php'))?>">Content / SEO / Quotes</a><a href="<?=e(site_url('/admin/branding.php'))?>">Website Branding</a><a href="<?=e(site_url('/'))?>" target="_blank">View Website ↗</a><a href="<?=e(site_url('/admin/logout.php'))?>">Sign Out</a></aside><main class="admin-main"><header><div><small>WEBSITE ADMIN</small><h1>Website Branding</h1></div></header><?php if($notice):?><div class="success"><?=e($notice)?></div><?php endif;?><?php if($error):?><div class="alert"><?=e($error)?></div><?php endif;?><section class="panel"><h2>Logo, Browser Icon & Social Meta Image</h2><p>Upload the images used for the website header, browser tab/favicon, and link previews. Uploaded paths are stored in the SQL <code>site_settings</code> table.</p><form method="post" enctype="multipart/form-data" class="form-grid"><input type="hidden" name="csrf" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="save_branding"><label class="full">Website Name<input name="site_name" value="<?=e($b['site_name'])?>"></label><label>Header Logo Upload<input type="file" name="header_logo" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"></label><label>Header Logo URL<input name="header_logo_url" value="<?=e($b['header_logo_url'])?>" placeholder="/uploads/branding/header-logo.png"></label><?php if($b['header_logo_url']):?><div class="branding-preview full"><span>Current Header Logo</span><img src="<?=e($b['header_logo_url'])?>" alt="Current header logo"></div><?php endif;?><label>Browser Tab / Favicon Upload<input type="file" name="favicon" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml,image/webp"></label><label>Favicon URL<input name="favicon_url" value="<?=e($b['favicon_url'])?>" placeholder="/uploads/branding/favicon.png"></label><?php if($b['favicon_url']):?><div class="branding-preview full"><span>Current Browser Icon</span><img class="favicon-preview" src="<?=e($b['favicon_url'])?>" alt="Current favicon"></div><?php endif;?><label>Meta / Social Image Upload<input type="file" name="meta_image" accept="image/png,image/jpeg,image/webp,image/gif"></label><label>Meta Image URL<input name="meta_image_url" value="<?=e($b['meta_image_url'])?>" placeholder="/uploads/branding/meta-image.jpg"></label><?php if($b['meta_image_url']):?><div class="branding-preview full"><span>Current Meta Image</span><img class="meta-preview" src="<?=e($b['meta_image_url'])?>" alt="Current meta image"></div><?php endif;?><div class="full"><button>Save Website Branding</button></div></form></section></main></body></html>
