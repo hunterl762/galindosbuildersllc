@@ -8,24 +8,9 @@ function slugify(string $v):string{$v=strtolower(trim((string)preg_replace('/[^a
 function csrf_token():string{if(empty($_SESSION['csrf']))$_SESSION['csrf']=bin2hex(random_bytes(32));return $_SESSION['csrf'];}
 function verify_csrf():void{if(!isset($_POST['csrf'])||!hash_equals($_SESSION['csrf']??'',(string)$_POST['csrf'])){http_response_code(419);exit('Invalid request token.');}}
 function is_admin():bool{return !empty($_SESSION['admin']);} function require_admin():void{if(!is_admin()){header('Location:'.site_url('/admin/'));exit;}}
-function base_path():string{
-    $docRoot=isset($_SERVER['DOCUMENT_ROOT'])?realpath((string)$_SERVER['DOCUMENT_ROOT']):false;
-    $root=realpath(ROOT_PATH);
-    if($docRoot&&$root){
-        $docRoot=str_replace('\\','/',$docRoot);
-        $root=str_replace('\\','/',$root);
-        if(str_starts_with(strtolower($root),strtolower($docRoot))){
-            $relative=trim(substr($root,strlen($docRoot)),'/');
-            return $relative===''?'':'/'.$relative;
-        }
-    }
-    $script=str_replace('\\','/',(string)($_SERVER['SCRIPT_NAME']??'/'));
-    $dir=rtrim(dirname($script),'/');
-    if(str_ends_with($dir,'/admin'))$dir=substr($dir,0,-6);
-    return $dir==='/'?'':$dir;
-}
+function base_path():string{$docRoot=isset($_SERVER['DOCUMENT_ROOT'])?realpath((string)$_SERVER['DOCUMENT_ROOT']):false;$root=realpath(ROOT_PATH);if($docRoot&&$root){$docRoot=str_replace('\\','/',$docRoot);$root=str_replace('\\','/',$root);if(str_starts_with(strtolower($root),strtolower($docRoot))){$relative=trim(substr($root,strlen($docRoot)),'/');return $relative===''?'':'/'.$relative;}}$script=str_replace('\\','/',(string)($_SERVER['SCRIPT_NAME']??'/'));$dir=rtrim(dirname($script),'/');if(str_ends_with($dir,'/admin'))$dir=substr($dir,0,-6);return $dir==='/'?'':$dir;}
 function site_url(string $path=''):string{$base=base_path();$path='/'.ltrim($path,'/');return ($base?:'').$path;}
-function asset_url(string $path):string{return site_url($path).'?v=20261002-2';}
+function asset_url(string $path):string{return site_url($path).'?v=20261002-3';}
 function database_config():array{$defaults=['host'=>'127.0.0.1','port'=>3306,'database'=>'','username'=>'','password'=>'','charset'=>'utf8mb4'];$file=ROOT_PATH.'/config/database.php';$config=is_file($file)?require $file:[];if(!is_array($config))$config=[];return array_merge($defaults,$config);}
 function db():?PDO{static $pdo=false;if($pdo!==false)return $pdo?:null;$c=database_config();if(empty($c['host'])||empty($c['database'])){$pdo=null;return null;}try{$dsn='mysql:host='.$c['host'].';port='.(int)$c['port'].';dbname='.$c['database'].';charset='.$c['charset'];$pdo=new PDO($dsn,(string)$c['username'],(string)$c['password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);db_schema($pdo);return $pdo;}catch(Throwable $e){error_log('DB fallback: '.$e->getMessage());$pdo=null;return null;}}
 function db_schema(PDO $p):void{$p->exec("CREATE TABLE IF NOT EXISTS site_store (store_key VARCHAR(100) PRIMARY KEY, payload LONGTEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
@@ -35,7 +20,10 @@ function default_home():array{return ['hero_eyebrow'=>'BUILT WITH PURPOSE','hero
 function home_content():array{return array_merge(default_home(),read_json('home.json',[]));}
 function services():array{return read_json('services.json',[['id'=>'wood','name'=>'Wood Framing','description'=>'Structural framing for residential and commercial construction.'],['id'=>'construction','name'=>'Construction','description'=>'Reliable field execution with a focus on schedule, coordination and quality.'],['id'=>'support','name'=>'Project Support','description'=>'Experienced crews ready to support complex scopes and active jobsites.']]);}
 function seo(string $page='home'):array{$all=read_json('seo.json',[]);$defaults=['title'=>'Galindos Builders LLC | Framing & Construction','description'=>'Professional framing and construction services by Galindos Builders LLC.','keywords'=>'framing contractor, construction, Maryland'];return array_merge($defaults,$all[$page]??[]);}
-function tabs():array{$d=[['id'=>'projects','label'=>'Projects','url'=>site_url('/projects.php'),'visible'=>true,'sort'=>10],['id'=>'services','label'=>'Services','url'=>site_url('/#services'),'visible'=>true,'sort'=>20],['id'=>'about','label'=>'About','url'=>site_url('/#about'),'visible'=>true,'sort'=>30],['id'=>'contact','label'=>'Contact','url'=>site_url('/#contact'),'visible'=>true,'sort'=>40]];$a=read_json('tabs.json',$d);usort($a,fn($x,$y)=>($x['sort']??0)<=>($y['sort']??0));return $a;}
+function tabs():array{$d=[['id'=>'projects','label'=>'Projects','url'=>site_url('/projects'),'visible'=>true,'sort'=>10,'page_slug'=>''],['id'=>'services','label'=>'Services','url'=>site_url('/#services'),'visible'=>true,'sort'=>20,'page_slug'=>''],['id'=>'about','label'=>'About','url'=>site_url('/#about'),'visible'=>true,'sort'=>30,'page_slug'=>''],['id'=>'contact','label'=>'Contact','url'=>site_url('/#contact'),'visible'=>true,'sort'=>40,'page_slug'=>'']];$a=read_json('tabs.json',$d);usort($a,fn($x,$y)=>($x['sort']??0)<=>($y['sort']??0));return $a;}
+function custom_pages():array{return read_json('pages.json',[]);}function custom_page_by_slug(string $slug):?array{foreach(custom_pages() as $p)if(($p['slug']??'')===$slug)return $p;return null;}
+function tab_url(array $tab):string{if(!empty($tab['page_slug']))return site_url('/page/'.rawurlencode((string)$tab['page_slug']));return (string)($tab['url']??site_url('/'));}
+function safe_page_html(string $html):string{$allowed='<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><blockquote><a><hr>';$html=strip_tags($html,$allowed);$html=preg_replace('/\s+on\w+\s*=\s*(["\']).*?\1/is','',$html);$html=preg_replace('/javascript\s*:/i','',$html);return $html;}
 function projects():array{return array_reverse(read_json('projects.json',[]));} function project_by_slug(string $s):?array{foreach(projects() as $p)if(($p['slug']??'')===$s)return $p;return null;}
 function save_uploaded_images(array $f):array{$out=[];$allowed=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];if(!isset($f['tmp_name']))return $out;foreach((array)$f['tmp_name'] as $i=>$tmp){if(((array)$f['error'])[$i]!==UPLOAD_ERR_OK||!is_uploaded_file($tmp)||filesize($tmp)>10*1024*1024)continue;$mime=(new finfo(FILEINFO_MIME_TYPE))->file($tmp);if(!isset($allowed[$mime]))continue;$n=bin2hex(random_bytes(12)).'.'.$allowed[$mime];if(move_uploaded_file($tmp,UPLOAD_PATH.'/'.$n))$out[]=site_url('/uploads/projects/'.$n);}return $out;}
 function delete_project_image(string $url):void{$path=parse_url($url,PHP_URL_PATH);$file=ROOT_PATH.'/'.ltrim((string)$path,'/');if(str_starts_with(realpath(dirname($file))?:'',realpath(UPLOAD_PATH)?:UPLOAD_PATH)&&is_file($file))@unlink($file);}
