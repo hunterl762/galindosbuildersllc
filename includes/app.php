@@ -1,74 +1,25 @@
 <?php
 declare(strict_types=1);
-
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_set_cookie_params(['httponly'=>true,'samesite'=>'Lax','secure'=>!empty($_SERVER['HTTPS'])]);
-    session_start();
-}
-
-define('ROOT_PATH', dirname(__DIR__));
-define('DATA_PATH', ROOT_PATH . '/data');
-define('UPLOAD_PATH', ROOT_PATH . '/uploads/projects');
-
-foreach ([DATA_PATH, UPLOAD_PATH] as $dir) {
-    if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
-}
-
-function read_json(string $file, array $fallback=[]): array {
-    $path = DATA_PATH . '/' . $file;
-    if (!is_file($path)) return $fallback;
-    $data = json_decode((string)file_get_contents($path), true);
-    return is_array($data) ? $data : $fallback;
-}
-function write_json(string $file, array $data): bool {
-    $path = DATA_PATH . '/' . $file;
-    $tmp = $path . '.tmp';
-    $json = json_encode($data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
-    return file_put_contents($tmp, $json, LOCK_EX) !== false && rename($tmp, $path);
-}
-function e(?string $value): string { return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8'); }
-function slugify(string $text): string {
-    $text = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $text), '-'));
-    return $text ?: 'item-' . time();
-}
-function csrf_token(): string {
-    if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));
-    return $_SESSION['csrf'];
-}
-function verify_csrf(): void {
-    if (!isset($_POST['csrf']) || !hash_equals($_SESSION['csrf'] ?? '', (string)$_POST['csrf'])) {
-        http_response_code(419); exit('Invalid request token. Please go back and try again.');
-    }
-}
-function is_admin(): bool { return !empty($_SESSION['admin']); }
-function require_admin(): void { if (!is_admin()) { header('Location: /admin/'); exit; } }
-function tabs(): array {
-    $default = [
-        ['id'=>'projects','label'=>'Projects','url'=>'/projects.php','visible'=>true,'sort'=>10],
-        ['id'=>'services','label'=>'Services','url'=>'/#services','visible'=>true,'sort'=>20],
-        ['id'=>'about','label'=>'About','url'=>'/#about','visible'=>true,'sort'=>30],
-        ['id'=>'contact','label'=>'Contact','url'=>'/#contact','visible'=>true,'sort'=>40],
-    ];
-    $items = read_json('tabs.json', $default);
-    usort($items, fn($a,$b)=>($a['sort']??0)<=>($b['sort']??0));
-    return $items;
-}
-function projects(): array { return array_reverse(read_json('projects.json', [])); }
-function project_by_slug(string $slug): ?array {
-    foreach (projects() as $p) if (($p['slug']??'') === $slug) return $p;
-    return null;
-}
-function save_uploaded_images(array $files): array {
-    $saved=[]; $allowed=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];
-    if (!isset($files['tmp_name'])) return $saved;
-    $names=(array)$files['name']; $tmps=(array)$files['tmp_name']; $errs=(array)$files['error'];
-    foreach ($tmps as $i=>$tmp) {
-        if (($errs[$i]??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK || !is_uploaded_file($tmp)) continue;
-        if (filesize($tmp)>10*1024*1024) continue;
-        $mime=(new finfo(FILEINFO_MIME_TYPE))->file($tmp);
-        if (!isset($allowed[$mime])) continue;
-        $name=bin2hex(random_bytes(12)).'.'.$allowed[$mime];
-        if (move_uploaded_file($tmp, UPLOAD_PATH.'/'.$name)) $saved[]='/uploads/projects/'.$name;
-    }
-    return $saved;
-}
+if(session_status()!==PHP_SESSION_ACTIVE){session_set_cookie_params(['httponly'=>true,'samesite'=>'Lax','secure'=>!empty($_SERVER['HTTPS'])]);session_start();}
+define('ROOT_PATH',dirname(__DIR__)); define('DATA_PATH',ROOT_PATH.'/data'); define('UPLOAD_PATH',ROOT_PATH.'/uploads/projects');
+foreach([DATA_PATH,UPLOAD_PATH] as $d)if(!is_dir($d))@mkdir($d,0775,true);
+function e(?string $v):string{return htmlspecialchars($v??'',ENT_QUOTES,'UTF-8');}
+function slugify(string $v):string{$v=strtolower(trim((string)preg_replace('/[^a-zA-Z0-9]+/','-',$v),'-'));return $v?:'item-'.time();}
+function csrf_token():string{if(empty($_SESSION['csrf']))$_SESSION['csrf']=bin2hex(random_bytes(32));return $_SESSION['csrf'];}
+function verify_csrf():void{if(!isset($_POST['csrf'])||!hash_equals($_SESSION['csrf']??'',(string)$_POST['csrf'])){http_response_code(419);exit('Invalid request token.');}}
+function is_admin():bool{return !empty($_SESSION['admin']);} function require_admin():void{if(!is_admin()){header('Location:'.site_url('/admin/'));exit;}}
+function base_path():string{$s=str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/'));if(str_ends_with($s,'/admin'))$s=dirname($s);return rtrim($s==='/'?'':$s,'/');}
+function site_url(string $path=''):string{return base_path().'/'.ltrim($path,'/');}
+function asset_url(string $path):string{return site_url($path).'?v=20261002';}
+function db():?PDO{static $pdo=false;if($pdo!==false)return $pdo?:null;$host=getenv('DB_HOST')?:'';$name=getenv('DB_NAME')?:'';if(!$host||!$name){$pdo=null;return null;}try{$pdo=new PDO('mysql:host='.$host.';dbname='.$name.';charset=utf8mb4',getenv('DB_USER')?:'',getenv('DB_PASS')?:'',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);db_schema($pdo);return $pdo;}catch(Throwable $e){error_log('DB fallback: '.$e->getMessage());$pdo=null;return null;}}
+function db_schema(PDO $p):void{$p->exec("CREATE TABLE IF NOT EXISTS site_store (store_key VARCHAR(100) PRIMARY KEY, payload LONGTEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function read_json(string $file,array $fallback=[]):array{$key=pathinfo($file,PATHINFO_FILENAME);if($p=db()){try{$s=$p->prepare('SELECT payload FROM site_store WHERE store_key=?');$s->execute([$key]);$r=$s->fetchColumn();if($r!==false){$a=json_decode($r,true);return is_array($a)?$a:$fallback;}}catch(Throwable $e){}}$path=DATA_PATH.'/'.$file;if(!is_file($path))return $fallback;$a=json_decode((string)file_get_contents($path),true);return is_array($a)?$a:$fallback;}
+function write_json(string $file,array $data):bool{$key=pathinfo($file,PATHINFO_FILENAME);$json=json_encode($data,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);if($p=db()){try{$s=$p->prepare('INSERT INTO site_store(store_key,payload) VALUES(?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload)');return $s->execute([$key,$json]);}catch(Throwable $e){}}$path=DATA_PATH.'/'.$file;$tmp=$path.'.tmp';return file_put_contents($tmp,$json,LOCK_EX)!==false&&rename($tmp,$path);}
+function default_home():array{return ['hero_eyebrow'=>'BUILT WITH PURPOSE','hero_title'=>'Craftsmanship that frames the future.','hero_text'=>'Professional framing and construction built around quality, safety, communication and dependable execution.','about_title'=>'Working together. Building it right.','about_text'=>'We bring a hands-on approach to every project, coordinating crews, schedules and details with one goal: deliver strong work our clients can count on.','contact_title'=>'Have a project in mind?','contact_text'=>'Tell us about the scope, schedule and location. We’ll get back to you to discuss the next steps.'];}
+function home_content():array{return array_merge(default_home(),read_json('home.json',[]));}
+function services():array{return read_json('services.json',[['id'=>'wood','name'=>'Wood Framing','description'=>'Structural framing for residential and commercial construction.'],['id'=>'construction','name'=>'Construction','description'=>'Reliable field execution with a focus on schedule, coordination and quality.'],['id'=>'support','name'=>'Project Support','description'=>'Experienced crews ready to support complex scopes and active jobsites.']]);}
+function seo(string $page='home'):array{$all=read_json('seo.json',[]);$defaults=['title'=>'Galindos Builders LLC | Framing & Construction','description'=>'Professional framing and construction services by Galindos Builders LLC.','keywords'=>'framing contractor, construction, Maryland'];return array_merge($defaults,$all[$page]??[]);}
+function tabs():array{$d=[['id'=>'projects','label'=>'Projects','url'=>site_url('/projects.php'),'visible'=>true,'sort'=>10],['id'=>'services','label'=>'Services','url'=>site_url('/#services'),'visible'=>true,'sort'=>20],['id'=>'about','label'=>'About','url'=>site_url('/#about'),'visible'=>true,'sort'=>30],['id'=>'contact','label'=>'Contact','url'=>site_url('/#contact'),'visible'=>true,'sort'=>40]];$a=read_json('tabs.json',$d);usort($a,fn($x,$y)=>($x['sort']??0)<=>($y['sort']??0));return $a;}
+function projects():array{return array_reverse(read_json('projects.json',[]));} function project_by_slug(string $s):?array{foreach(projects() as $p)if(($p['slug']??'')===$s)return $p;return null;}
+function save_uploaded_images(array $f):array{$out=[];$allowed=['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'];if(!isset($f['tmp_name']))return $out;foreach((array)$f['tmp_name'] as $i=>$tmp){if(((array)$f['error'])[$i]!==UPLOAD_ERR_OK||!is_uploaded_file($tmp)||filesize($tmp)>10*1024*1024)continue;$mime=(new finfo(FILEINFO_MIME_TYPE))->file($tmp);if(!isset($allowed[$mime]))continue;$n=bin2hex(random_bytes(12)).'.'.$allowed[$mime];if(move_uploaded_file($tmp,UPLOAD_PATH.'/'.$n))$out[]=site_url('/uploads/projects/'.$n);}return $out;}
+function delete_project_image(string $url):void{$path=parse_url($url,PHP_URL_PATH);$file=ROOT_PATH.'/'.ltrim((string)$path,'/');if(str_starts_with(realpath(dirname($file))?:'',realpath(UPLOAD_PATH)?:UPLOAD_PATH)&&is_file($file))@unlink($file);}
