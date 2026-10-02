@@ -8,9 +8,24 @@ function slugify(string $v):string{$v=strtolower(trim((string)preg_replace('/[^a
 function csrf_token():string{if(empty($_SESSION['csrf']))$_SESSION['csrf']=bin2hex(random_bytes(32));return $_SESSION['csrf'];}
 function verify_csrf():void{if(!isset($_POST['csrf'])||!hash_equals($_SESSION['csrf']??'',(string)$_POST['csrf'])){http_response_code(419);exit('Invalid request token.');}}
 function is_admin():bool{return !empty($_SESSION['admin']);} function require_admin():void{if(!is_admin()){header('Location:'.site_url('/admin/'));exit;}}
-function base_path():string{$s=str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/'));if(str_ends_with($s,'/admin'))$s=dirname($s);return rtrim($s==='/'?'':$s,'/');}
-function site_url(string $path=''):string{return base_path().'/'.ltrim($path,'/');}
-function asset_url(string $path):string{return site_url($path).'?v=20261002';}
+function base_path():string{
+    $docRoot=isset($_SERVER['DOCUMENT_ROOT'])?realpath((string)$_SERVER['DOCUMENT_ROOT']):false;
+    $root=realpath(ROOT_PATH);
+    if($docRoot&&$root){
+        $docRoot=str_replace('\\','/',$docRoot);
+        $root=str_replace('\\','/',$root);
+        if(str_starts_with(strtolower($root),strtolower($docRoot))){
+            $relative=trim(substr($root,strlen($docRoot)),'/');
+            return $relative===''?'':'/'.$relative;
+        }
+    }
+    $script=str_replace('\\','/',(string)($_SERVER['SCRIPT_NAME']??'/'));
+    $dir=rtrim(dirname($script),'/');
+    if(str_ends_with($dir,'/admin'))$dir=substr($dir,0,-6);
+    return $dir==='/'?'':$dir;
+}
+function site_url(string $path=''):string{$base=base_path();$path='/'.ltrim($path,'/');return ($base?:'').$path;}
+function asset_url(string $path):string{return site_url($path).'?v=20261002-2';}
 function database_config():array{$defaults=['host'=>'127.0.0.1','port'=>3306,'database'=>'','username'=>'','password'=>'','charset'=>'utf8mb4'];$file=ROOT_PATH.'/config/database.php';$config=is_file($file)?require $file:[];if(!is_array($config))$config=[];return array_merge($defaults,$config);}
 function db():?PDO{static $pdo=false;if($pdo!==false)return $pdo?:null;$c=database_config();if(empty($c['host'])||empty($c['database'])){$pdo=null;return null;}try{$dsn='mysql:host='.$c['host'].';port='.(int)$c['port'].';dbname='.$c['database'].';charset='.$c['charset'];$pdo=new PDO($dsn,(string)$c['username'],(string)$c['password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);db_schema($pdo);return $pdo;}catch(Throwable $e){error_log('DB fallback: '.$e->getMessage());$pdo=null;return null;}}
 function db_schema(PDO $p):void{$p->exec("CREATE TABLE IF NOT EXISTS site_store (store_key VARCHAR(100) PRIMARY KEY, payload LONGTEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
