@@ -2,12 +2,14 @@
 declare(strict_types=1);
 if(PHP_SAPI!=='cli')exit;
 require dirname(__DIR__).'/includes/app.php';require ROOT.'/includes/migrate.php';require ROOT.'/includes/content.php';require ROOT.'/includes/mail.php';
+require ROOT.'/includes/diagnostics.php';
 function ok(bool $condition,string $message):void {if(!$condition)throw new RuntimeException('FAILED: '.$message);echo "PASS: $message\n";}
 ok(!str_contains(clean_html('<h2>Safe</h2><script>attack()</script><a href="javascript:alert(1)" onclick="bad()">Link</a>'),'attack'),'HTML sanitization');
 foreach(['javascript:alert(1)','//evil.example','/\\evil.example'] as $url){try{safe_url($url);throw new LogicException('Unsafe URL accepted');}catch(RuntimeException $ex){ok($ex->getCode()===422,'Reject unsafe URL');}}
 ok(verify_password('long-password-123',str_replace('$2y$','$2b$',password_hash('long-password-123',PASSWORD_BCRYPT))),'Node bcrypt compatibility');
 if(defined('PASSWORD_ARGON2ID'))ok(verify_password('long-password-123',password_hash('long-password-123',PASSWORD_ARGON2ID)),'Argon2 account compatibility');
 ok(!can(['role'=>'editor','active'=>1],'settings')&&can(['role'=>'owner','active'=>1],'settings'),'Role permissions');
+foreach([1045=>'username or password',1049=>'does not exist',2002=>'cannot reach',1142=>'Privileges',1062=>'duplicate'] as $code=>$phrase){$error=new PDOException('Private credential details must not appear');$error->errorInfo=['HY000',$code,'Private credential details'];[$status,$message]=installation_error($error);ok(str_contains($message,$phrase)&&!str_contains($message,'Private credential'),'Safe installer diagnostic '.$code);}
 if(!getenv('TEST_DB_PORT')){echo "Database integration skipped; set TEST_DB_PORT to a disposable server.\n";exit;}
 $name='galindos_test_php_'.bin2hex(random_bytes(6));$port=getenv('TEST_DB_PORT');$databaseUser=getenv('TEST_DB_USER')?:'root';$databasePassword=getenv('TEST_DB_PASS')?:'';
 $admin=new PDO('mysql:host=127.0.0.1;port='.$port,$databaseUser,$databasePassword,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$admin->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4");
