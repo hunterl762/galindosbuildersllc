@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Website Administration | Galindos Builders LLC</title>
+<link rel="stylesheet" href="/admin/admin.css">
+<script defer src="/assets/js/admin.js">
+</script>
+</head>
+<body class="login-body">
+<div class="login-shell">
+<section class="login-brand-panel">
+<a class="login-site-link" href="/">← Return to website</a>
+<div class="login-brand-content">
+<div class="admin-logo login-logo">GB</div>
+<p class="login-eyebrow">GALINDOS BUILDERS LLC</p>
+<h1>Website Administration</h1>
+<p>Manage projects, galleries, custom pages, services, navigation, SEO settings and quote requests from one secure dashboard.</p>
+</div>
+</section>
+<section class="login-form-panel">
+<form class="login-card" method="post" action="/admin/<%= setup?'setup':'login' %>">
+<div>
+<p class="login-eyebrow">ADMIN PORTAL</p>
+<h2>
+<%= setup?'Create Administrator':'Welcome back' %>
+</h2>
+<p class="login-help">
+<%= setup?'Use the setup token configured on your server.':'Sign in with your administrator account to continue.' %>
+</p>
+</div>
+<% if(error){ %>
+<div class="alert" role="alert">
+<%= error %>
+</div>
+<% } %>
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<% if(setup){ %>
+<label>Setup token<input type="password" name="setup_token" required autocomplete="off">
+</label>
+<% } %>
+<label>Username<input name="username" required autocomplete="username" maxlength="100">
+</label>
+<label>Password<div class="password-field">
+<input id="admin-password" type="password" name="password" required minlength="<%= setup?12:1 %>" maxlength="128" autocomplete="<%= setup?'new-password':'current-password' %>">
+<button type="button" class="password-toggle" data-password-toggle>Show</button>
+</div>
+</label>
+<button class="login-submit">
+<%= setup?'Create Administrator':'Sign In to Dashboard' %>
+</button>
+</form>
+</section>
+</div>
+</body>
+</html>

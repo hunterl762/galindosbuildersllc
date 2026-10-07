@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>
+<%= title %> | Galindos Builders</title>
+<link rel="stylesheet" href="/admin/admin.css">
+<script defer src="/assets/js/admin.js">
+</script>
+</head>
+<body>
+<aside>
+<div class="admin-logo">GB</div>
+<h2>Galindos Builders</h2>
+<a href="/admin">Dashboard</a>
+<% Object.entries(resources).forEach(([key,r])=>{if(can(user,r.permission)){ %>
+<a href="/admin/<%= key %>">
+<%= r.label %>
+</a>
+<% } }); %>
+<% if(can(user,'content')){ %>
+<a href="/admin/media">Media Library</a>
+<a href="/admin/home">Homepage Content</a>
+<a href="/admin/sections">Homepage Sections</a>
+<% } %>
+<% if(can(user,'leads')){ %>
+<a href="/admin/leads">Quote Requests</a>
+<a href="/admin/mail">Email Delivery</a>
+<% } %>
+<% if(can(user,'settings')){ %>
+<a href="/admin/settings">Settings & Branding</a>
+<% } %>
+<% if(can(user,'users')){ %>
+<a href="/admin/users">Administrator Accounts</a>
+<% } %>
+<a href="/" target="_blank" rel="noopener">View Website ↗</a>
+<form action="/admin/logout" method="post">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<button>Sign Out</button>
+</form>
+</aside>
+<main class="admin-main">
+<header>
+<div>
+<small>WEBSITE ADMIN</small>
+<h1>
+<%= title %>
+</h1>
+</div>
+<span>
+<%= user.username %> · <%= user.role %>
+</span>
+</header>
+<% if(mode==='dashboard'){ %>
+<section class="stats">
+<% stats.forEach(([label,n])=>{ %>
+<article>
+<strong>
+<%= n %>
+</strong>
+<span>
+<%= label %>
+</span>
+</article>
+<% }); %>
+</section>
+<section class="panel">
+<h2>Manage your website</h2>
+<p>Use the menu to publish case studies, manage reusable photos, arrange homepage sections and follow up with customers.</p>
+</section>
+<% } %>
+<% if(mode==='list'){ %>
+<section class="panel">
+<p>
+<a href="/admin/<%= key %>/new">Add <%= resource.label %> →</a>
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Slug / URL</th>
+<th>Published</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<% items.forEach(row=>{const rid=row[resource.id||'id']; %>
+<tr>
+<td>
+<%= row.name||row.title||row.label||row.page_key %>
+</td>
+<td>
+<%= row.slug||row.url||row.page_key %>
+</td>
+<td>
+<%= row.visible===0?'Hidden':'Yes' %>
+</td>
+<td>
+<a href="/admin/<%= key %>/<%= encodeURIComponent(rid) %>">Edit</a>
+<form class="compact" method="post" action="/admin/<%= key %>/<%= encodeURIComponent(rid) %>/delete" data-confirm="Delete this record?">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<button class="danger">Delete</button>
+</form>
+</td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+</section>
+<% } %>
+<% if(mode==='edit'||mode==='settings'){ %>
+<datalist id="library-urls">
+<% media.forEach(m=>{ %>
+<option value="<%= m.url %>">
+<%= m.title %>
+</option>
+<% }); %>
+</datalist>
+<section class="panel">
+<form class="form-grid" method="post" action="/admin/<%= key %>
+<%= mode==='edit'?'/save':'' %>">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<% if(mode==='edit'){ %>
+<input type="hidden" name="record_id" value="<%= record[resource.id||'id']||'' %>">
+<% } %>
+<%- include('partials/fields') %>
+<button>Save Changes</button>
+</form>
+<p>Image URL fields offer images from the <a href="/admin/media">media library</a>.</p>
+</section>
+<% } %>
+<% if(mode==='edit'&&key==='projects'&&record.id){ %>
+<section class="panel">
+<h2>Gallery</h2>
+<p>Reuse an uploaded image and choose its position, caption and before/after label.</p>
+<form class="form-grid" method="post" action="/admin/projects/<%= record.id %>/gallery">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Library image<select name="media_id" required>
+<% media.forEach(m=>{ %>
+<option value="<%= m.id %>">
+<%= m.title||m.url %>
+</option>
+<% }); %>
+</select>
+</label>
+<label>Order<input type="number" name="sort_order" value="<%= gallery.length*10 %>">
+</label>
+<label>Alt text<input name="alt_text" maxlength="255">
+</label>
+<label>Caption<input name="caption" maxlength="255">
+</label>
+<label>Photo type<select name="image_kind">
+<option>gallery</option>
+<option>before</option>
+<option>after</option>
+</select>
+</label>
+<button>Add to Gallery</button>
+</form>
+<div class="image-manager">
+<% gallery.forEach(image=>{ %>
+<article>
+<img src="<%= image.image_url %>" alt="<%= image.alt_text||'' %>">
+<form method="post" action="/admin/projects/<%= record.id %>/gallery/<%= image.id %>" class="image-form">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Order<input name="sort_order" type="number" value="<%= image.sort_order %>">
+</label>
+<label>Alt text<input name="alt_text" value="<%= image.alt_text||'' %>" maxlength="255">
+</label>
+<label>Caption<input name="caption" value="<%= image.caption||'' %>" maxlength="255">
+</label>
+<label>Photo type<select name="image_kind">
+<% ['gallery','before','after'].forEach(kind=>{ %>
+<option <%= image.image_kind===kind?'selected':'' %>>
+<%= kind %>
+</option>
+<% }); %>
+</select>
+</label>
+<button name="action" value="save">Save</button>
+<button class="danger" name="action" value="remove">Remove from Gallery</button>
+</form>
+</article>
+<% }); %>
+</div>
+</section>
+<% } %>
+<% if(mode==='sections'){ %>
+<section class="panel">
+<p>Lower order numbers appear first. Uncheck a section to hide it.</p>
+<% items.forEach(section=>{ %>
+<form class="section-row" action="/admin/sections/<%= section.section_key %>" method="post">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<strong>
+<%= section.section_key %>
+</strong>
+<label class="check">
+<input type="checkbox" name="enabled" value="1" <%= section.enabled?'checked':'' %>>Enabled</label>
+<label>Order<input type="number" name="sort_order" value="<%= section.sort_order %>">
+</label>
+<button>Save</button>
+</form>
+<% }); %>
+</section>
+<% } %>
+<% if(mode==='media'){ %>
+<section class="panel">
+<h2>Upload an Image</h2>
+<form class="form-grid" action="/admin/media/upload" method="post" enctype="multipart/form-data" data-upload>
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Image (up to 10 MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif,image/x-icon" required>
+</label>
+<label>Title<input name="title" maxlength="255">
+</label>
+<label>Alt text<input name="alt_text" maxlength="255">
+</label>
+<label>Folder / Category<input name="folder" maxlength="100">
+</label>
+<button>Upload</button>
+<p role="status" data-upload-status>
+</p>
+</form>
+</section>
+<section class="panel">
+<label>Filter by title or folder<input data-media-filter placeholder="Search library">
+</label>
+<div class="image-manager">
+<% items.forEach(m=>{ %>
+<article data-media-search="<%= (m.title+' '+m.folder).toLowerCase() %>">
+<img src="<%= m.url %>" alt="<%= m.alt_text %>" loading="lazy">
+<form class="image-form" method="post" action="/admin/media/<%= m.id %>/save">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Title<input name="title" value="<%= m.title %>" maxlength="255">
+</label>
+<label>Alt text<input name="alt_text" value="<%= m.alt_text %>" maxlength="255">
+</label>
+<label>Folder<input name="folder" value="<%= m.folder %>" maxlength="100">
+</label>
+<label>Reusable URL<input value="<%= m.url %>" readonly>
+</label>
+<button>Save</button>
+</form>
+<%- include('partials/replace-media',{m}) %>
+<form class="image-form" method="post" action="/admin/media/<%= m.id %>/delete" data-confirm="Delete this library entry? Images in use cannot be deleted.">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<button class="danger">Delete</button>
+</form>
+</article>
+<% }); %>
+</div>
+</section>
+<% } %>
+<% if(mode==='leads'){ %>
+<section class="panel">
+<form method="get">
+<label>Status<select name="status">
+<option value="">All</option>
+<% leadStatuses.forEach(s=>{ %>
+<option <%= status===s?'selected':'' %>>
+<%= s %>
+</option>
+<% }); %>
+</select>
+</label>
+<button>Filter</button>
+</form>
+<p>Showing the latest 500 matching requests.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Customer</th>
+<th>Project</th>
+<th>Status</th>
+<th>Assigned to</th>
+<th>Submitted</th>
+</tr>
+</thead>
+<tbody>
+<% items.forEach(q=>{ %>
+<tr>
+<td>
+<a href="/admin/leads/<%= q.id %>">
+<%= q.name %>
+</a>
+<br>
+<%= q.email %>
+</td>
+<td>
+<%= q.project_type %>
+<br>
+<%= q.location %>
+</td>
+<td>
+<%= q.status %>
+</td>
+<td>
+<%= q.assignee||'Unassigned' %>
+</td>
+<td>
+<%= q.submitted_at %>
+</td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+</section>
+<% } %>
+<% if(mode==='lead'){ %>
+<section class="panel">
+<h2>
+<%= record.name %>
+</h2>
+<p>
+<%= record.email %> · <%= record.phone %>
+</p>
+<p>
+<%= record.project_type %> · <%= record.location %>
+</p>
+<p class="preserve-lines">
+<%= record.message %>
+</p>
+<form class="form-grid" method="post">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Status<select name="status">
+<% leadStatuses.forEach(s=>{ %>
+<option <%= s.toLowerCase()===record.status.toLowerCase()?'selected':'' %>>
+<%= s %>
+</option>
+<% }); %>
+</select>
+</label>
+<label>Assigned to<select name="assigned_to">
+<option value="">Unassigned</option>
+<% users.forEach(a=>{ %>
+<option value="<%= a.id %>" <%= a.id===record.assigned_to?'selected':'' %>>
+<%= a.username %>
+</option>
+<% }); %>
+</select>
+</label>
+<label class="full">Add internal note<textarea name="note" maxlength="10000">
+</textarea>
+</label>
+<button>Save Request</button>
+</form>
+</section>
+<section class="panel">
+<h2>Internal Notes</h2>
+<% notes.forEach(n=>{ %>
+<article>
+<p class="preserve-lines">
+<%= n.note %>
+</p>
+<small>
+<%= n.username %> · <%= n.created_at %>
+</small>
+<hr>
+</article>
+<% }); %>
+</section>
+<% } %>
+<% if(mode==='users'){ %>
+<section class="panel">
+<h2>Add Account</h2>
+<p>Owners manage everything. Editors manage content and media. Sales accounts manage leads and email delivery.</p>
+<form class="form-grid" method="post">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Username<input name="username" required minlength="3" maxlength="100">
+</label>
+<label>Email<input name="email" type="email" maxlength="255">
+</label>
+<label>Password<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password">
+</label>
+<label>Role<select name="role">
+<% ['editor','sales','owner'].forEach(r=>{ %>
+<option>
+<%= r %>
+</option>
+<% }); %>
+</select>
+</label>
+<button>Create Account</button>
+</form>
+</section>
+<section class="panel">
+<% items.forEach(a=>{ %>
+<h3>
+<%= a.username %>
+</h3>
+<form class="form-grid" method="post" action="/admin/users/<%= a.id %>">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label>Role<select name="role">
+<% ['owner','editor','sales'].forEach(r=>{ %>
+<option <%= a.role===r?'selected':'' %>>
+<%= r %>
+</option>
+<% }); %>
+</select>
+</label>
+<label class="check">
+<input type="checkbox" name="active" value="1" <%= a.active?'checked':'' %>>Active</label>
+<label>Reset password (leave blank to keep)<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password">
+</label>
+<button>Save Account</button>
+</form>
+<hr>
+<% }); %>
+</section>
+<% } %>
+<% if(mode==='mail'){ %>
+<section class="panel">
+<p>
+<%= mailConfigured?'Email notifications are configured. Run the mail worker to deliver queued messages.':'Set SMTP_HOST, MAIL_FROM and QUOTE_NOTIFY_EMAIL to enable notifications.' %>
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Recipient</th>
+<th>Subject</th>
+<th>Attempts</th>
+<th>Delivery</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<% items.forEach(m=>{ %>
+<tr>
+<td>
+<%= m.recipient %>
+</td>
+<td>
+<%= m.subject %>
+</td>
+<td>
+<%= m.attempts %>
+</td>
+<td>
+<%= m.sent_at||m.last_error||'Pending' %>
+</td>
+<td>
+<% if(!m.sent_at){ %>
+<form method="post" action="/admin/mail/<%= m.id %>/retry">
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<button>Retry</button>
+</form>
+<% } %>
+</td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+</section>
+<% } %>
+</main>
+</body>
+</html>

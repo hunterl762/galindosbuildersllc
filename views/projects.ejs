@@ -1,0 +1,22 @@
+<%- include('partials/head') %>
+<section class="page-hero">
+<p class="eyebrow">OUR WORK</p>
+<h1>Projects</h1>
+</section>
+<main class="projects-section">
+<div class="filters">
+<button class="filter active" data-filter="all">All</button>
+<% [...new Set(projects.map(p=>p.category).filter(Boolean))].forEach(category=>{ %>
+<button class="filter" data-filter="<%= category %>">
+<%= category %>
+</button>
+<% }); %>
+</div>
+<%- include('partials/cards',{items:projects}) %>
+<% if(!projects.length){ %>
+<div class="empty-projects">
+<h3>Projects coming soon.</h3>
+</div>
+<% } %>
+</main>
+<%- include('partials/footer') %>

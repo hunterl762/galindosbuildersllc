@@ -1,0 +1,31 @@
+<% Object.entries(fields).forEach(([key,f])=>{ const value=record[key]??(f.type==='select'?f.options[0]:''); %>
+<label class="<%= ['textarea','html'].includes(f.type)?'full':f.type==='checkbox'?'check':'' %>">
+<%= f.label %>
+<% if(f.type==='checkbox'){ %>
+<input type="checkbox" name="<%= key %>" value="1" <%= value?'checked':'' %>>
+<% }else if(['textarea','html'].includes(f.type)){ %>
+<textarea name="<%= key %>" rows="<%= f.type==='html'?12:4 %>" maxlength="<%= f.max %>">
+<%= value %>
+</textarea>
+<% }else if(f.type==='select'){ %>
+<select name="<%= key %>">
+<% f.options.forEach(option=>{ %>
+<option value="<%= option %>" <%= value===option?'selected':'' %>>
+<%= option %>
+</option>
+<% }); %>
+</select>
+<% }else if(f.type==='service'){ %>
+<select name="<%= key %>">
+<option value="">None</option>
+<% services.forEach(s=>{ %>
+<option value="<%= s.id %>" <%= value===s.id?'selected':'' %>>
+<%= s.name %>
+</option>
+<% }); %>
+</select>
+<% }else{ %>
+<input name="<%= key %>" value="<%= value %>" type="<%= ['number','date','email'].includes(f.type)?f.type:'text' %>" <%= f.required?'required':'' %> maxlength="<%= f.max||255 %>" <%= f.type==='url'?'list=library-urls':'' %>>
+<% } %>
+</label>
+<% }); %>

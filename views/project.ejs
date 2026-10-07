@@ -1,0 +1,87 @@
+<%- include('partials/head') %>
+<section class="project-hero">
+<div class="project-hero-bg">
+<% if(item.featured_image){ %>
+<img src="<%= item.featured_image %>" alt="">
+<% } %>
+</div>
+<div class="project-hero-content">
+<a class="project-back" href="/projects">← ALL PROJECTS</a>
+<p class="eyebrow">
+<%= item.category %>
+</p>
+<h1>
+<%= item.name %>
+</h1>
+<p class="project-location">
+<%= item.location %>
+</p>
+</div>
+</section>
+<main class="project-detail">
+<section class="project-overview">
+<div class="project-overview-title">
+<p class="eyebrow dark">PROJECT OVERVIEW</p>
+<h2>
+<%= item.name %>
+</h2>
+</div>
+<div class="project-description">
+<p class="preserve-lines">
+<%= item.description %>
+</p>
+<% if(item.scope){ %>
+<h3>Scope of work</h3>
+<p class="preserve-lines">
+<%= item.scope %>
+</p>
+<% } %>
+<% if(item.stats){ %>
+<h3>Project stats</h3>
+<p class="preserve-lines">
+<%= item.stats %>
+</p>
+<% } %>
+</div>
+<aside class="project-facts">
+<% [['Location',item.location],['Type',item.project_type||item.category],['Status',item.status],['Completed',item.completion_date],['Client',item.client],['General contractor',item.contractor],['Square footage',item.square_footage],['Photos',item.images.length]].forEach(([label,value])=>{ if(value){ %>
+<div>
+<small>
+<%= label %>
+</small>
+<strong>
+<%= value %>
+</strong>
+</div>
+<% } }); %>
+</aside>
+</section>
+<% if(item.images.length){ %>
+<section class="project-gallery-section">
+<div class="section-heading">
+<p class="eyebrow dark">PROJECT GALLERY</p>
+<h2>Built with attention to detail.</h2>
+</div>
+<div class="project-gallery">
+<% item.images.forEach((image,i)=>{ %>
+<figure class="<%= i===0?'gallery-feature':'' %>">
+<img loading="lazy" src="<%= image.image_url %>" alt="<%= image.alt_text||image.media_alt||item.name %>">
+<figcaption>
+<%= image.image_kind!=='gallery'?image.image_kind+' · ':'' %>
+<%= image.caption||item.name %>
+</figcaption>
+</figure>
+<% }); %>
+</div>
+</section>
+<% } %>
+<section class="project-cta">
+<div>
+<p class="eyebrow">START A CONVERSATION</p>
+<h2>Planning a project?</h2>
+<p>Tell us about your scope, schedule and location.</p>
+</div>
+<a class="btn primary" href="/#contact">Request a Quote</a>
+</section>
+</main>
+<%- include('partials/footer') %>
