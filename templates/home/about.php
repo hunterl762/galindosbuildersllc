@@ -1,0 +1,1 @@
+<section class="intro" id="about"><div><p class="eyebrow dark">GALINDOS BUILDERS LLC</p><h2><?=e($home['about_title'])?></h2></div><div><p><?=e($home['about_text'])?></p><a class="text-link" href="#services">WHAT WE DO →</a></div></section>

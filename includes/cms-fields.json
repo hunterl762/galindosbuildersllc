@@ -1,0 +1,792 @@
+{
+  "resources": {
+    "projects": {
+      "table": "projects",
+      "label": "Projects",
+      "permission": "content",
+      "fields": {
+        "slug": {
+          "label": "URL slug",
+          "type": "slug",
+          "max": 190,
+          "required": true,
+          "options": []
+        },
+        "name": {
+          "label": "Project name",
+          "type": "text",
+          "max": 255,
+          "required": true,
+          "options": []
+        },
+        "location": {
+          "label": "Location",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "category": {
+          "label": "Category",
+          "type": "text",
+          "max": 120,
+          "required": false,
+          "options": []
+        },
+        "status": {
+          "label": "Project status",
+          "type": "text",
+          "max": 100,
+          "required": false,
+          "options": []
+        },
+        "description": {
+          "label": "Description",
+          "type": "textarea",
+          "max": 100000,
+          "required": false,
+          "options": []
+        },
+        "completion_date": {
+          "label": "Completion date",
+          "type": "date",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "client": {
+          "label": "Client",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "contractor": {
+          "label": "General contractor",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "scope": {
+          "label": "Scope of work",
+          "type": "textarea",
+          "max": 20000,
+          "required": false,
+          "options": []
+        },
+        "square_footage": {
+          "label": "Square footage",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "project_type": {
+          "label": "Project type",
+          "type": "text",
+          "max": 160,
+          "required": false,
+          "options": []
+        },
+        "service_id": {
+          "label": "Related service",
+          "type": "service",
+          "max": 100,
+          "required": false,
+          "options": []
+        },
+        "featured_image": {
+          "label": "Featured image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "stats": {
+          "label": "Project stats",
+          "type": "textarea",
+          "max": 10000,
+          "required": false,
+          "options": []
+        },
+        "featured": {
+          "label": "Featured",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "visible": {
+          "label": "Published",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "sort_order": {
+          "label": "Order",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_title": {
+          "label": "SEO title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_description": {
+          "label": "SEO description",
+          "type": "textarea",
+          "max": 2000,
+          "required": false,
+          "options": []
+        },
+        "canonical_url": {
+          "label": "Canonical URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "og_image": {
+          "label": "Social image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "robots": {
+          "label": "Search visibility",
+          "type": "select",
+          "max": 40,
+          "required": false,
+          "options": [
+            "index,follow",
+            "noindex,follow",
+            "noindex,nofollow"
+          ]
+        }
+      }
+    },
+    "pages": {
+      "table": "pages",
+      "label": "Custom Pages",
+      "permission": "content",
+      "fields": {
+        "slug": {
+          "label": "URL slug",
+          "type": "slug",
+          "max": 160,
+          "required": true,
+          "options": []
+        },
+        "title": {
+          "label": "Page title",
+          "type": "text",
+          "max": 255,
+          "required": true,
+          "options": []
+        },
+        "hero_text": {
+          "label": "Hero text",
+          "type": "textarea",
+          "max": 5000,
+          "required": false,
+          "options": []
+        },
+        "content": {
+          "label": "Page content (basic HTML)",
+          "type": "html",
+          "max": 100000,
+          "required": false,
+          "options": []
+        },
+        "featured_image": {
+          "label": "Featured image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "visible": {
+          "label": "Published",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "sort_order": {
+          "label": "Order",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_title": {
+          "label": "SEO title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_description": {
+          "label": "SEO description",
+          "type": "textarea",
+          "max": 2000,
+          "required": false,
+          "options": []
+        },
+        "canonical_url": {
+          "label": "Canonical URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "og_image": {
+          "label": "Social image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "robots": {
+          "label": "Search visibility",
+          "type": "select",
+          "max": 40,
+          "required": false,
+          "options": [
+            "index,follow",
+            "noindex,follow",
+            "noindex,nofollow"
+          ]
+        },
+        "eyebrow": {
+          "label": "Hero eyebrow",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "cta_title": {
+          "label": "CTA title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "cta_text": {
+          "label": "CTA text",
+          "type": "textarea",
+          "max": 5000,
+          "required": false,
+          "options": []
+        },
+        "cta_label": {
+          "label": "CTA button label",
+          "type": "text",
+          "max": 120,
+          "required": false,
+          "options": []
+        },
+        "cta_url": {
+          "label": "CTA URL",
+          "type": "url",
+          "max": 500,
+          "required": false,
+          "options": []
+        }
+      }
+    },
+    "services": {
+      "table": "services",
+      "label": "Services",
+      "permission": "content",
+      "fields": {
+        "slug": {
+          "label": "URL slug",
+          "type": "slug",
+          "max": 160,
+          "required": true,
+          "options": []
+        },
+        "name": {
+          "label": "Service name",
+          "type": "text",
+          "max": 255,
+          "required": true,
+          "options": []
+        },
+        "description": {
+          "label": "Summary",
+          "type": "textarea",
+          "max": 10000,
+          "required": false,
+          "options": []
+        },
+        "hero_text": {
+          "label": "Hero text",
+          "type": "textarea",
+          "max": 5000,
+          "required": false,
+          "options": []
+        },
+        "content": {
+          "label": "Page content (basic HTML)",
+          "type": "html",
+          "max": 100000,
+          "required": false,
+          "options": []
+        },
+        "featured_image": {
+          "label": "Featured image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "visible": {
+          "label": "Published",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "sort_order": {
+          "label": "Order",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_title": {
+          "label": "SEO title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_description": {
+          "label": "SEO description",
+          "type": "textarea",
+          "max": 2000,
+          "required": false,
+          "options": []
+        },
+        "canonical_url": {
+          "label": "Canonical URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "og_image": {
+          "label": "Social image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "robots": {
+          "label": "Search visibility",
+          "type": "select",
+          "max": 40,
+          "required": false,
+          "options": [
+            "index,follow",
+            "noindex,follow",
+            "noindex,nofollow"
+          ]
+        }
+      }
+    },
+    "service-areas": {
+      "table": "service_areas",
+      "label": "Service Areas",
+      "permission": "content",
+      "fields": {
+        "slug": {
+          "label": "URL slug",
+          "type": "slug",
+          "max": 160,
+          "required": true,
+          "options": []
+        },
+        "title": {
+          "label": "Page title",
+          "type": "text",
+          "max": 255,
+          "required": true,
+          "options": []
+        },
+        "hero_text": {
+          "label": "Hero text",
+          "type": "textarea",
+          "max": 5000,
+          "required": false,
+          "options": []
+        },
+        "content": {
+          "label": "Page content (basic HTML)",
+          "type": "html",
+          "max": 100000,
+          "required": false,
+          "options": []
+        },
+        "featured_image": {
+          "label": "Featured image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "visible": {
+          "label": "Published",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "sort_order": {
+          "label": "Order",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_title": {
+          "label": "SEO title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "seo_description": {
+          "label": "SEO description",
+          "type": "textarea",
+          "max": 2000,
+          "required": false,
+          "options": []
+        },
+        "canonical_url": {
+          "label": "Canonical URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "og_image": {
+          "label": "Social image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "robots": {
+          "label": "Search visibility",
+          "type": "select",
+          "max": 40,
+          "required": false,
+          "options": [
+            "index,follow",
+            "noindex,follow",
+            "noindex,nofollow"
+          ]
+        },
+        "location": {
+          "label": "Location",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        }
+      }
+    },
+    "navigation": {
+      "table": "navigation_tabs",
+      "label": "Navigation",
+      "permission": "content",
+      "fields": {
+        "label": {
+          "label": "Link label",
+          "type": "text",
+          "max": 120,
+          "required": true,
+          "options": []
+        },
+        "url": {
+          "label": "Link URL",
+          "type": "url",
+          "max": 500,
+          "required": false,
+          "options": []
+        },
+        "page_slug": {
+          "label": "Custom page slug",
+          "type": "text",
+          "max": 160,
+          "required": false,
+          "options": []
+        },
+        "visible": {
+          "label": "Published",
+          "type": "checkbox",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "sort_order": {
+          "label": "Order",
+          "type": "number",
+          "max": 255,
+          "required": false,
+          "options": []
+        }
+      }
+    },
+    "seo": {
+      "table": "seo_settings",
+      "id": "page_key",
+      "label": "SEO",
+      "permission": "content",
+      "fields": {
+        "page_key": {
+          "label": "Page key (home, projects or /route)",
+          "type": "text",
+          "max": 160,
+          "required": true,
+          "options": []
+        },
+        "title": {
+          "label": "Title",
+          "type": "text",
+          "max": 255,
+          "required": false,
+          "options": []
+        },
+        "description": {
+          "label": "Description",
+          "type": "textarea",
+          "max": 2000,
+          "required": false,
+          "options": []
+        },
+        "keywords": {
+          "label": "Keywords",
+          "type": "textarea",
+          "max": 5000,
+          "required": false,
+          "options": []
+        },
+        "canonical_url": {
+          "label": "Canonical URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "og_image": {
+          "label": "Social image URL",
+          "type": "url",
+          "max": 700,
+          "required": false,
+          "options": []
+        },
+        "robots": {
+          "label": "Search visibility",
+          "type": "select",
+          "max": 40,
+          "required": false,
+          "options": [
+            "index,follow",
+            "noindex,follow",
+            "noindex,nofollow"
+          ]
+        }
+      }
+    }
+  },
+  "settingsFields": {
+    "site_name": {
+      "label": "Website name",
+      "type": "text",
+      "max": 255,
+      "required": true,
+      "options": []
+    },
+    "header_logo_url": {
+      "label": "Header logo URL",
+      "type": "url",
+      "max": 700,
+      "required": false,
+      "options": []
+    },
+    "favicon_url": {
+      "label": "Favicon URL",
+      "type": "url",
+      "max": 700,
+      "required": false,
+      "options": []
+    },
+    "meta_image_url": {
+      "label": "Default social image URL",
+      "type": "url",
+      "max": 700,
+      "required": false,
+      "options": []
+    },
+    "phone": {
+      "label": "Company phone",
+      "type": "text",
+      "max": 80,
+      "required": false,
+      "options": []
+    },
+    "email": {
+      "label": "Company email",
+      "type": "email",
+      "max": 255,
+      "required": false,
+      "options": []
+    },
+    "address": {
+      "label": "Company address",
+      "type": "textarea",
+      "max": 2000,
+      "required": false,
+      "options": []
+    },
+    "footer_text": {
+      "label": "Footer text",
+      "type": "text",
+      "max": 2000,
+      "required": false,
+      "options": []
+    }
+  },
+  "homeFields": {
+    "hero_eyebrow": {
+      "label": "hero eyebrow",
+      "type": "text",
+      "max": 255,
+      "required": false,
+      "options": []
+    },
+    "hero_title": {
+      "label": "hero title",
+      "type": "text",
+      "max": 255,
+      "required": false,
+      "options": []
+    },
+    "hero_text": {
+      "label": "hero text",
+      "type": "textarea",
+      "max": 10000,
+      "required": false,
+      "options": []
+    },
+    "about_title": {
+      "label": "about title",
+      "type": "text",
+      "max": 255,
+      "required": false,
+      "options": []
+    },
+    "about_text": {
+      "label": "about text",
+      "type": "textarea",
+      "max": 10000,
+      "required": false,
+      "options": []
+    },
+    "contact_title": {
+      "label": "contact title",
+      "type": "text",
+      "max": 255,
+      "required": false,
+      "options": []
+    },
+    "contact_text": {
+      "label": "contact text",
+      "type": "textarea",
+      "max": 10000,
+      "required": false,
+      "options": []
+    }
+  },
+  "leadStatuses": [
+    "New",
+    "Contacted",
+    "Estimate Scheduled",
+    "Quote Sent",
+    "Won",
+    "Lost",
+    "Quoted",
+    "Closed"
+  ],
+  "defaultHome": {
+    "hero_eyebrow": "BUILT WITH PURPOSE",
+    "hero_title": "Craftsmanship that frames the future.",
+    "hero_text": "Professional framing and construction built around quality, safety, communication and dependable execution.",
+    "about_title": "Working together. Building it right.",
+    "about_text": "We bring a hands-on approach to every project, coordinating crews, schedules and details with one goal: deliver strong work our clients can count on.",
+    "contact_title": "Have a project in mind?",
+    "contact_text": "Tell us about the scope, schedule and location. We’ll get back to you to discuss the next steps."
+  },
+  "defaultSettings": {
+    "site_name": "Galindos Builders LLC",
+    "header_logo_url": "",
+    "favicon_url": "",
+    "meta_image_url": "",
+    "phone": "",
+    "email": "",
+    "address": "",
+    "footer_text": "Professional framing & construction."
+  },
+  "defaultServices": [
+    {
+      "id": "wood",
+      "slug": "wood-framing",
+      "name": "Wood Framing",
+      "description": "Structural framing for residential and commercial construction.",
+      "visible": 1
+    },
+    {
+      "id": "construction",
+      "slug": "construction",
+      "name": "Construction",
+      "description": "Reliable field execution with a focus on schedule, coordination and quality.",
+      "visible": 1
+    },
+    {
+      "id": "support",
+      "slug": "project-support",
+      "name": "Project Support",
+      "description": "Experienced crews ready to support complex scopes and active jobsites.",
+      "visible": 1
+    }
+  ],
+  "defaultTabs": [
+    {
+      "label": "Projects",
+      "url": "/projects"
+    },
+    {
+      "label": "Services",
+      "url": "/#services"
+    },
+    {
+      "label": "About",
+      "url": "/#about"
+    },
+    {
+      "label": "Contact",
+      "url": "/#contact"
+    }
+  ]
+}

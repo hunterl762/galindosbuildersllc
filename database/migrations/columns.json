@@ -1,0 +1,55 @@
+{
+  "admins": {
+    "role": "VARCHAR(20) NOT NULL DEFAULT 'owner'",
+    "active": "TINYINT(1) NOT NULL DEFAULT 1",
+    "email": "VARCHAR(255) NULL"
+  },
+  "projects": {
+    "visible": "TINYINT(1) NOT NULL DEFAULT 1",
+    "completion_date": "DATE NULL",
+    "client": "VARCHAR(255) NULL",
+    "contractor": "VARCHAR(255) NULL",
+    "scope": "TEXT NULL",
+    "square_footage": "INT UNSIGNED NULL",
+    "project_type": "VARCHAR(160) NULL",
+    "service_id": "VARCHAR(100) NULL",
+    "featured_image": "VARCHAR(700) NULL",
+    "stats": "TEXT NULL",
+    "seo_title": "VARCHAR(255) NULL",
+    "seo_description": "TEXT NULL",
+    "canonical_url": "VARCHAR(700) NULL",
+    "og_image": "VARCHAR(700) NULL",
+    "robots": "VARCHAR(40) NOT NULL DEFAULT 'index,follow'"
+  },
+  "project_images": {
+    "media_id": "VARCHAR(32) NULL",
+    "caption": "VARCHAR(255) NULL",
+    "image_kind": "VARCHAR(20) NOT NULL DEFAULT 'gallery'"
+  },
+  "services": {
+    "slug": "VARCHAR(160) NULL",
+    "content": "LONGTEXT NULL",
+    "hero_text": "TEXT NULL",
+    "featured_image": "VARCHAR(700) NULL",
+    "seo_title": "VARCHAR(255) NULL",
+    "seo_description": "TEXT NULL",
+    "canonical_url": "VARCHAR(700) NULL",
+    "og_image": "VARCHAR(700) NULL",
+    "robots": "VARCHAR(40) NOT NULL DEFAULT 'index,follow'"
+  },
+  "pages": {
+    "featured_image": "VARCHAR(700) NULL",
+    "canonical_url": "VARCHAR(700) NULL",
+    "og_image": "VARCHAR(700) NULL",
+    "robots": "VARCHAR(40) NOT NULL DEFAULT 'index,follow'"
+  },
+  "seo_settings": {
+    "canonical_url": "VARCHAR(700) NULL",
+    "og_image": "VARCHAR(700) NULL",
+    "robots": "VARCHAR(40) NOT NULL DEFAULT 'index,follow'"
+  },
+  "quote_submissions": {
+    "assigned_to": "BIGINT UNSIGNED NULL",
+    "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+  }
+}

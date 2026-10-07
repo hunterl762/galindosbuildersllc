@@ -1,0 +1,5 @@
+{
+  "name": "galindos/builders-cms",
+  "description": "Galindos Builders PHP CMS v2",
+  "require": { "php": ">=8.2", "ext-pdo": "*", "ext-pdo_mysql": "*", "ext-fileinfo": "*", "ext-dom": "*", "ext-mbstring": "*", "phpmailer/phpmailer": "^6.10" }
+}

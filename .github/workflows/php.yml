@@ -1,0 +1,29 @@
+name: PHP CMS checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -ptest-password"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, fileinfo, dom, mbstring, openssl
+          tools: composer:v2
+      - run: composer install --no-dev --prefer-dist --no-interaction
+      - run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - run: php tests/run.php
+        env:
+          TEST_DB_PORT: 3306
+          TEST_DB_USER: root
+          TEST_DB_PASS: test-password
+      - run: composer audit

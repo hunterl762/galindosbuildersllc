@@ -1,59 +1,53 @@
-# Galindos Builders LLC — Node.js CMS v2
+# Galindos Builders LLC — PHP CMS v2
 
-Express 5, EJS server-rendered pages, MySQL/MariaDB and a complete administrator CMS. The approved orange/charcoal construction design, responsive project galleries and sticky navigation are retained. PHP and Apache rewrite rules are no longer required.
+PHP 8.2+ and MySQL/MariaDB construction website with the approved orange/charcoal design, sticky navigation and full administrator CMS. It runs on standard Apache/cPanel PHP hosting. No Node.js process, npm, Passenger or Node app deployment is required.
 
-## Requirements and local setup
+## Deploy in cPanel
 
-- Node.js 24 or newer; MySQL 8+ or MariaDB 10.4+.
-- An existing database and a dedicated database user. Migrations require CREATE, ALTER, INDEX, SELECT, INSERT and UPDATE privileges. The runtime user needs SELECT, INSERT, UPDATE and DELETE only.
-- A writable persistent uploads directory. Keep it outside ephemeral release folders when deploying.
+1. Back up the existing database and uploads. Disable the old Node application so it cannot keep writing to the database or claiming the domain.
+2. In cPanel, point the domain at a normal PHP document root such as `public_html`. Select PHP 8.2 or newer with PDO MySQL, Fileinfo, DOM, mbstring and OpenSSL. Argon2 password support is required to verify existing Node-created Argon2 accounts.
+3. Upload and extract `galindosbuilders-php.zip` directly into that document root. Confirm `index.php` and `.htaccess` are at the root, not inside an extra nested folder. The ZIP includes the email library and excludes local credentials, Git history, Windows modules and Node dependencies.
+4. Create `.env` from `.env.example` on the server. Set the actual cPanel database hostname, database name, username and password. cPanel names often include the account prefix. Assign the database user to that database with the required permissions. Use the existing database to retain all data; do not reimport `schema.sql` over a live database.
+5. Set `SITE_URL=https://your-domain.com` and `COOKIE_SECURE=true`. The application currently supports a domain root, not a subdirectory. Set a random `SETUP_TOKEN` (the existing local token can also be used privately). Make `uploads/` writable by the PHP account, typically permissions 755 or 775 rather than 777.
+6. Copy the existing `uploads/projects/`, `uploads/branding/` and `uploads/media/` files into the same paths. Existing images keep their URLs. If there are older `data/*.json` files, copy them before installation; they remain private.
+7. Open `https://your-domain.com/install.php` and enter the setup token. This runs additive migrations, imports legacy content only into empty tables and registers gallery media. Existing SQL content is never truncated or dropped. Alternatively run `php scripts/migrate.php --import-legacy` from the project folder in cPanel Terminal.
+8. Sign in at `/admin/login`. On a new database the setup screen creates the first owner account with the same setup token. Existing PHP bcrypt, Node bcrypt and Argon2 hashes are preserved. If the server lacks Argon2 support, enable it or use the host terminal recovery command `php scripts/reset-admin.php username`; it reads the new password from stdin rather than command arguments.
+9. After installation and initial account creation, remove `SETUP_TOKEN` from the server configuration to disable installer access. Verify projects, galleries, branding, services, custom pages, lead history and roles before reopening the site.
 
-1. Run `npm ci`.
-2. Copy `.env.example` to `.env`. Set the database credentials, `SITE_URL` and a random `SESSION_SECRET` of at least 32 characters. Generate the secret with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
-3. Run `npm run migrate` using credentials with schema privileges.
-4. Run `npm start`, then open http://localhost:3000.
-5. On a new installation, set a random `SETUP_TOKEN`, restart the app, and open `/admin/login`. Submit that token with your new username and a password of at least 12 characters. Once an administrator exists, setup is locked. Remove `SETUP_TOKEN` and restart.
+The PHP conversion retains the Node CMS v2 schema and adds a separate `php_sessions` table. Node sessions are not reused; administrators sign in again. `.env` is read directly by PHP, so cPanel does not need an app runner's environment settings. Never place credentials in a public ZIP. Apache must honor `.htaccess` and have mod_rewrite enabled; it protects configuration/source paths and provides clean routes. If you get a database error, check the real MySQL hostname and credentials supplied by your host. Switching runtime does not remove the need for MySQL.
 
-The app deliberately fails when the database is unavailable; it never silently switches to empty JSON storage. Schema changes run through the migration command, not during normal requests.
+## Features
 
-## Migrating an existing PHP installation
+- Projects/case studies: metadata, completion date, client/general contractor, scope, square footage, type/category, stats, related service, featured/publication controls and ordered galleries with alt text, captions and before/after labels.
+- Reusable media: titles, alt text, folders/search, reuse, same-format replacement and deletion protection for in-use images. Actual MIME signatures are checked; uploads are limited to 10 MB. Imported legacy files remain on disk when their unused library entry is removed.
+- Settings & Branding: direct logo/favicon/social image uploads, previews, immediate application and reusable URLs; company contact details and footer copy.
+- Homepage hero/about/contact editing, section enable/disable and numeric ordering.
+- Dedicated services, service areas, sanitized custom page content, navigation, CTAs and publication controls.
+- Lead statuses, active-account assignment, dated internal notes and preserved quote history.
+- Owner/editor/sales permissions checked against current database accounts; disabled users lose access immediately. Password resets invalidate PHP sessions. The last owner and your own owner access are protected.
+- Canonical URLs, Open Graph/social images, robots controls, XML sitemap and JSON-LD. Unpublished and noindex content is omitted from the sitemap.
+- Persistent SQL sessions, secure/HttpOnly/SameSite cookies, CSRF, prepared SQL, server validation, sanitized rich HTML, shared login/setup/quote rate limits and security headers.
 
-1. Schedule a maintenance window and stop PHP writes. Back up the complete MySQL database, `data/` JSON files and `uploads/` directory before changing anything. Keep the old PHP release for rollback.
-2. Install this branch in a separate release directory. Point `.env` at the **same existing database**, using credentials from the old `config/database.php`. Never commit credentials. Set `SITE_URL` to the domain origin, with no subdirectory.
-3. Copy the entire old `uploads/` tree, including `projects/` and `branding/`, into `UPLOAD_DIR`. URLs retain `/uploads/...` paths. Existing SVG branding remains usable; new uploads accept raster images/ICO only.
-4. If this install has legacy JSON files, copy them into this release's `data/` directory **before migrating**. Run `npm run migrate`, then `npm run import:legacy`, then `npm run migrate` once more to register imported gallery images. The importer also reads `site_store` payloads. It imports a collection only when the normalized destination is empty and never overwrites existing SQL records. Malformed input stops the import rather than silently discarding it.
-5. Run `npm run migrate` for SQL-only installs. It creates missing baseline tables and adds columns/tables in place; it never truncates or drops legacy tables. MySQL DDL commits implicitly, so migration steps are individually re-entrant and protected by a database lock. Backups remain the rollback mechanism.
-6. Verify existing administrator login, project images, pages, navigation, home content, branding and quote history on staging. PHP bcrypt `$2y$` and Argon2 password hashes remain supported; existing accounts become owners. Assign narrower roles in `/admin/users` after migration.
-7. Switch the reverse proxy to Node and start the mail worker if notifications are configured. Permanent redirects preserve public `/index.php`, `/projects.php`, `/project.php?job=...` and `/page.php?slug=...` bookmarks. Saved PHP public navigation URLs are translated at render time. Admin bookmarks move to `/admin/login` and `/admin/*`.
+Public routes: `/`, `/projects`, `/project/:slug`, `/page/:slug`, `/services/:slug`, `/service-areas/:slug`, `/robots.txt`, `/sitemap.xml`, and `/admin/*`. Old public `.php` query URLs redirect to the clean routes, and old admin GET bookmarks redirect to their current equivalents.
 
-No production database or uploads are bundled in this repository. The automated migration tests use representative old-schema fixtures; validate your actual backup on staging before cutover. For rollback, stop Node and the worker, restore the database/upload backups and switch back to the saved PHP release. Do not run both applications as concurrent writers.
+## Email delivery
 
-## CMS v2
+The deployment ZIP bundles PHPMailer. Repository checkouts should run `composer install --no-dev --prefer-dist` first. Set `MAIL_FROM`, `QUOTE_NOTIFY_EMAIL` and SMTP settings in `.env`. SMTP uses verified TLS (STARTTLS on 587, implicit TLS with `SMTP_SECURE=true` on 465). Alternatively choose `MAIL_TRANSPORT=mail` to use the hosting provider's PHP mail transport if enabled.
 
-- **Projects:** client, general contractor, completion date, scope, square footage, type/category, service association, stats, publication/featured controls, SEO and reusable gallery photos. Gallery photos have sort order, alt text, captions and before/after labels. Removing a gallery entry leaves its library image reusable.
-- **Media:** upload once, edit titles/alt text/folders, search, reuse URLs throughout the CMS and attach images to multiple projects. Actual file signatures are checked; uploads are limited to 10 MB. In-use media cannot be deleted. Imported legacy files remain on disk when library entries are removed.
-- **Homepage:** edit hero/about/contact copy and enable, disable or reorder Hero, About, Values, Services, Projects and Contact sections with numeric ordering.
-- **Leads:** New → Contacted → Estimate Scheduled → Quote Sent → Won/Lost, plus preserved Quoted/Closed legacy statuses. Assign requests to active accounts and add dated internal notes. The inbox shows the newest 500 matching requests; all records remain stored.
-- **Pages:** dedicated services, service areas and custom pages, HTML content with server-side sanitization, publication controls, CTAs, images and related service projects.
-- **SEO:** per-page titles/descriptions, canonical URLs, Open Graph images, robots controls, `/robots.txt`, `/sitemap.xml`, and JSON-LD structured data. Use `home` or `projects` as global SEO keys; other keys use the full path such as `/page/about`. Noindex and unpublished content are omitted from the sitemap. Custom canonical URLs are excluded to avoid duplicate listings.
-- **Settings:** company name/contact details, logo, favicon, social image, footer text. Favicon and social media images can be uploaded and applied directly in Settings & Branding, with previews. Uploaded images are also saved in the media library. Image URL fields still offer library URLs.
-- **Accounts:** owner (all controls), editor (content/media), sales (leads/email). Permissions are enforced on every request against the current SQL account. Disabled accounts lose access immediately, and password resets invalidate stored sessions. The last owner and your own owner access are protected.
+In cPanel Cron Jobs, run once per minute using the correct PHP executable and absolute project path:
 
-## Email notifications
+```
+* * * * * /usr/local/bin/php /home/ACCOUNT/public_html/scripts/mail-worker.php
+```
 
-Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, optional SMTP credentials, `MAIL_FROM` and `QUOTE_NOTIFY_EMAIL`. A submitted quote and the company/customer notification jobs are committed in one transaction. Start `npm run mail:worker` as a separate supervised process; `node scripts/mail-worker.js --once` drains a batch once. Delivery uses leased jobs, retry delays and up to eight attempts. Review failures and request retries under `/admin/mail`. Delivery is at least once: an SMTP success followed by a process failure before recording success can send a duplicate. With SMTP unconfigured, quote capture still works and email jobs are not created. Historical quotes are not emailed automatically.
+Adjust the executable to the hosting provider's PHP CLI version. A quote and its company/customer mail jobs are committed together. The worker claims jobs with leases, retries with delays and stops after eight attempts. Review/retry failures under `/admin/mail`. Delivery is at least once, so a crash after SMTP accepts a message can produce a duplicate. With email unconfigured, quotes still save and mail jobs are not created. Historical quotes are not sent automatically. The cron job also cleans expired sessions and rate counters.
 
-## Production deployment
+## Local development and verification
 
-Set `NODE_ENV=production`, an HTTPS `SITE_URL`, and `TRUST_PROXY` to the exact number of trusted proxies (typically 1). Secure cookies require HTTPS and correct forwarded protocol headers. Restrict access to the Node port to the proxy; use TLS for remote database connections with `DB_SSL=true`. Run the app and worker as a dedicated unprivileged user. Example nginx and systemd files are in `deploy/`; adjust domains, certificate paths, runtime path and service user.
+- Configure `.env`, run `php scripts/migrate.php`, then `php -S 127.0.0.1:8000 router.php`.
+- Set local `SITE_URL=http://127.0.0.1:8000` and `COOKIE_SECURE=false`.
+- Run `php tests/run.php` for sanitization, URL validation, password compatibility and role checks.
+- To exercise migrations and HTTP CMS workflows, set `TEST_DB_PORT`, optional `TEST_DB_USER`/`TEST_DB_PASS`, and run `php tests/run.php` against a disposable MySQL/MariaDB server. It creates and drops a unique test database and starts its own PHP server on port 33080. Never set these variables to a production database server.
+- Run `composer audit` and PHP syntax checks. GitHub Actions runs the PHP suite against MySQL 8.4; local verification also runs on MariaDB 10.4.
 
-Sessions persist in MySQL with HttpOnly, SameSite=Lax cookies and rolling eight-hour expiry plus a 24-hour absolute login lifetime. Requests use CSRF tokens, prepared SQL statements, validation, sanitization, Helmet/CSP and rate limits. Login/setup/quote limits are shared through MySQL across instances. The general per-minute request limit is per process. Only assets and uploads are served as static files; `.env`, source files and legacy `data/` remain private. The worker cleans expired sessions/rate counters; if email is disabled, schedule those SQL deletes separately. `/healthz` tests database connectivity. Monitor process logs, database availability, disk space and the email outbox. Back up both MySQL and uploads regularly.
-
-## Verification
-
-- `npm run check`: compile every EJS template and check JavaScript syntax.
-- `npm test`: password compatibility, roles, input/URL validation, sanitization and configuration tests. Database tests are skipped unless `TEST_DB_PORT` is set.
-- `TEST_DB_PORT=3306 TEST_DB_USER=root TEST_DB_PASS=... npm test`: run the full integration suite against a **test-only** server. It creates a unique `galindos_test_*` database, exercises the legacy migration twice, login/session persistence, CMS workflows, CSRF/permissions, media validation/reuse and lead/email behavior, then drops that database. The test user must be allowed to create/drop databases.
-- `npm audit --omit=dev`: dependency audit.
-
-GitHub Actions runs these checks with Node 24 and MySQL 8.4. Local integration verification also ran against MariaDB 10.4. No default admin credentials are shipped.
+Back up both SQL and uploads regularly. Keep the previous release for rollback. Migrations are re-entrant and protected by a database lock; MySQL DDL commits implicitly, so restore backups for rollback rather than attempting destructive down migrations. Real production data is not bundled and must be validated on staging before cutover.

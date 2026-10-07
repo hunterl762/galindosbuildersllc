@@ -8,3 +8,6 @@ data/**/*
 !data/.gitkeep
 coverage/
 *.log
+vendor/
+*.zip
+.local-backup/
