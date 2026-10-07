@@ -1,0 +1,1 @@
+<section class="hero"><div class="hero-shade"></div><div class="hero-content"><p class="eyebrow"><?=e($home['hero_eyebrow'])?></p><h1><?=e($home['hero_title'])?></h1><p><?=e($home['hero_text'])?></p><div class="actions"><a class="btn primary" href="<?=e(site_url('/projects'))?>">Explore Our Work</a><a class="btn ghost" href="#contact">Request a Quote</a></div></div></section>

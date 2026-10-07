@@ -1,0 +1,14 @@
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+<FilesMatch "^(\.|composer\.(json|lock)$|README\.md$)">
+  Require all denied
+</FilesMatch>
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^(?:includes|templates|database|scripts|tests|test|src|views|vendor|deploy|node_modules|\.git|\.github)(?:/|$) - [F,L,NC]
+RewriteRule \.(?:zip|log|sql|env|json|lock|ini)$ - [F,L,NC]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^ index.php [END,QSA]
+</IfModule>
