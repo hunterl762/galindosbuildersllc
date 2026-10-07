@@ -3,12 +3,18 @@ declare(strict_types=1);
 if(PHP_SAPI!=='cli')exit;
 require dirname(__DIR__).'/includes/app.php';require ROOT.'/includes/migrate.php';require ROOT.'/includes/content.php';require ROOT.'/includes/mail.php';
 require ROOT.'/includes/diagnostics.php';
+require ROOT.'/includes/installer.php';
 function ok(bool $condition,string $message):void {if(!$condition)throw new RuntimeException('FAILED: '.$message);echo "PASS: $message\n";}
 ok(!str_contains(clean_html('<h2>Safe</h2><script>attack()</script><a href="javascript:alert(1)" onclick="bad()">Link</a>'),'attack'),'HTML sanitization');
 foreach(['javascript:alert(1)','//evil.example','/\\evil.example'] as $url){try{safe_url($url);throw new LogicException('Unsafe URL accepted');}catch(RuntimeException $ex){ok($ex->getCode()===422,'Reject unsafe URL');}}
 ok(verify_password('long-password-123',str_replace('$2y$','$2b$',password_hash('long-password-123',PASSWORD_BCRYPT))),'Node bcrypt compatibility');
 if(defined('PASSWORD_ARGON2ID'))ok(verify_password('long-password-123',password_hash('long-password-123',PASSWORD_ARGON2ID)),'Argon2 account compatibility');
 ok(!can(['role'=>'editor','active'=>1],'settings')&&can(['role'=>'owner','active'=>1],'settings'),'Role permissions');
+$configurationFile=tempnam(sys_get_temp_dir(),'gb-settings-');file_put_contents($configurationFile,"SETUP_TOKEN=keep-this-token\nUPLOAD_DIR=uploads\nDB_PASS=old\n");
+try{$secret='quotes" and apostrophe\' and backslash\\ and $dollar';save_installer_configuration(['DB_PASS'=>$secret,'SMTP_PASS'=>$secret],$configurationFile);$saved=file_get_contents($configurationFile);ok(str_contains($saved,'SETUP_TOKEN=keep-this-token')&&str_contains($saved,'UPLOAD_DIR=uploads'),'Installer preserves unrelated configuration');preg_match('/^DB_PASS=(.*)$/m',$saved,$secretMatch);ok(json_decode($secretMatch[1],true)===$secret,'Installer safely quotes password punctuation');}finally{unlink($configurationFile);}
+$sample=['DB_HOST'=>'localhost','DB_PORT'=>'3306','DB_NAME'=>'account_galindos','DB_USER'=>'account_user','SITE_URL'=>'https://example.com','MAIL_TRANSPORT'=>'disabled','SMTP_HOST'=>'','SMTP_PORT'=>'587','SMTP_USER'=>'','SMTP_SECURE'=>'false','MAIL_FROM'=>'','QUOTE_NOTIFY_EMAIL'=>''];
+ok(installer_configuration($sample)['COOKIE_SECURE']==='true','Installer configures secure HTTPS cookies');
+try{installer_configuration(array_merge($sample,['DB_HOST'=>'localhost;dbname=other']));throw new LogicException('DSN injection accepted');}catch(RuntimeException $ex){ok($ex->getCode()===422,'Installer rejects DSN injection');}
 foreach([1045=>'username or password',1049=>'does not exist',2002=>'cannot reach',1142=>'Privileges',1062=>'duplicate'] as $code=>$phrase){$error=new PDOException('Private credential details must not appear');$error->errorInfo=['HY000',$code,'Private credential details'];[$status,$message]=installation_error($error);ok(str_contains($message,$phrase)&&!str_contains($message,'Private credential'),'Safe installer diagnostic '.$code);}
 if(!getenv('TEST_DB_PORT')){echo "Database integration skipped; set TEST_DB_PORT to a disposable server.\n";exit;}
 $name='galindos_test_php_'.bin2hex(random_bytes(6));$port=getenv('TEST_DB_PORT');$databaseUser=getenv('TEST_DB_USER')?:'root';$databasePassword=getenv('TEST_DB_PASS')?:'';
@@ -38,6 +44,14 @@ try{
     array_push($command,'-d','display_errors=0','-S','127.0.0.1:33080',ROOT.'/router.php');
     $server=proc_open($command,[0=>['pipe','r'],1=>['file',$uploadDir.'/server.log','a'],2=>['file',$uploadDir.'/server.log','a']],$pipes,ROOT);
     for($i=0;$i<50;$i++){if(@fsockopen('127.0.0.1',33080,$errno,$errstr,0.1))break;usleep(100000);}
+    $installer=http('/installer.php');$installerCsrf=token($installer);ok($installer['status']===200&&!str_contains($installer['text'],'name="DB_USER"'),'Installer hides configuration until unlocked');
+    ok(http('/installer.php',['csrf'=>$installerCsrf,'action'=>'unlock','setup_token'=>'wrong'])['status']===403,'Installer rejects invalid setup token');
+    ok(http('/installer.php',['csrf'=>$installerCsrf,'action'=>'unlock','setup_token'=>'test-setup-token'])['status']===303,'Installer token unlock');
+    $installer=http('/installer.php');$installerCsrf=token($installer);ok(str_contains($installer['text'],'name="DB_USER"')&&str_contains($installer['text'],'name="SMTP_HOST"'),'Installer database and SMTP controls');
+    $candidate=['csrf'=>$installerCsrf,'action'=>'test_database','DB_HOST'=>'127.0.0.1','DB_PORT'=>$port,'DB_NAME'=>$name,'DB_USER'=>$databaseUser,'DB_PASS'=>$databasePassword,'SITE_URL'=>'http://127.0.0.1:33080','MAIL_TRANSPORT'=>'disabled','SMTP_HOST'=>'','SMTP_PORT'=>'587','SMTP_USER'=>'','SMTP_SECURE'=>'false','MAIL_FROM'=>'','QUOTE_NOTIFY_EMAIL'=>''];
+    $tested=http('/installer.php',$candidate);ok($tested['status']===200&&str_contains($tested['text'],'Database connection successful'),'Installer tests database without saving');
+    $tested=http('/installer.php',array_merge($candidate,['DB_PASS'=>'never-render-this-secret']));ok($tested['status']===503&&!str_contains($tested['text'],'never-render-this-secret'),'Installer hides rejected passwords');
+    http('/installer.php',['csrf'=>$installerCsrf,'action'=>'lock']);
     $login=http('/admin/login');$csrf=token($login);ok(http('/admin/login',['csrf'=>$csrf,'username'=>'owner','password'=>'owner-password-123'])['status']===303,'Admin login');$csrf=token(http('/admin'));
     foreach(['/','/projects','/project/legacy-project','/page/about','/services/wood-framing','/sitemap.xml','/robots.txt','/admin/projects','/admin/projects/new','/admin/pages','/admin/services','/admin/service-areas','/admin/navigation','/admin/seo','/admin/settings','/admin/media','/admin/home','/admin/sections','/admin/leads','/admin/users','/admin/mail'] as $path){$r=http($path);ok($r['status']===200,'Page '.$path.' ('.$r['status'].')');}
     ok(http('/admin/home',['hero_title'=>'Missing token'])['status']===403,'CSRF enforcement');

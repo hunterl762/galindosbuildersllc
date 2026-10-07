@@ -8,9 +8,13 @@ function env(string $key, string $default=''): string {
         $values=[];
         if (is_file(ROOT.'/.env')) foreach(file(ROOT.'/.env', FILE_IGNORE_NEW_LINES) as $line) {
             $line=trim($line); if($line===''||str_starts_with($line,'#')||!str_contains($line,'=')) continue;
-            [$k,$v]=explode('=',$line,2); $values[trim($k)]=trim(trim($v),'"\'');
+            [$k,$v]=explode('=',$line,2); $v=trim($v);
+            if(strlen($v)>=2&&$v[0]==='"'&&str_ends_with($v,'"')){$decoded=json_decode($v,true);$v=is_string($decoded)?$decoded:substr($v,1,-1);}
+            elseif(strlen($v)>=2&&$v[0]==="'"&&str_ends_with($v,"'"))$v=substr($v,1,-1);
+            $values[trim($k)]=$v;
         }
     }
+    if(array_key_exists($key,$GLOBALS['installer_environment']??[]))return (string)$GLOBALS['installer_environment'][$key];
     $v=getenv($key); return $v===false ? (string)($values[$key]??$default) : $v;
 }
 function e(mixed $v): string {return htmlspecialchars((string)($v??''), ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
@@ -86,13 +90,13 @@ function throttle(string $kind,int $limit,int $seconds):void {
 }
 function password_hash_php(string $password):string {if(strlen($password)<12||strlen($password)>128)fail(422,'Use a password of 12–128 bytes.');if(defined('PASSWORD_ARGON2ID'))return password_hash($password,PASSWORD_ARGON2ID);if(strlen($password)>72)fail(422,'This PHP server supports passwords up to 72 bytes.');return password_hash($password,PASSWORD_BCRYPT,['cost'=>12]);}
 function verify_password(string $password,string $hash):bool {return password_verify($password,str_replace('$2b$','$2y$',$hash));}
-function boot():void {
+function boot(bool $databaseSessions=true):void {
     header('X-Content-Type-Options: nosniff');header('Referrer-Policy: strict-origin-when-cross-origin');header('X-Frame-Options: SAMEORIGIN');
     header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
     $secure=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')||env('COOKIE_SECURE')==='true';
     ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');ini_set('session.gc_maxlifetime','28800');session_name('GBPHPSESSID');
     session_set_cookie_params(['lifetime'=>28800,'path'=>'/','secure'=>$secure,'httponly'=>true,'samesite'=>'Lax']);
-    try{q('SELECT sid FROM php_sessions LIMIT 1');session_set_save_handler(new PhpSessionStore(),true);}catch(PDOException $ex){if(!in_array($ex->errorInfo[1]??0,[1146],true))throw $ex;}
+    if($databaseSessions)try{q('SELECT sid FROM php_sessions LIMIT 1');session_set_save_handler(new PhpSessionStore(),true);}catch(PDOException $ex){if(!in_array($ex->errorInfo[1]??0,[1146],true))throw $ex;}
     session_start(); if(!in_array($_SERVER['REQUEST_METHOD']??'GET',['GET','HEAD','OPTIONS'],true))check_csrf();
 }
 class PhpSessionStore implements SessionHandlerInterface,SessionUpdateTimestampHandlerInterface {

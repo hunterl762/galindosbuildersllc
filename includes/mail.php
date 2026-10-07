@@ -1,5 +1,6 @@
 <?php
 function queue_quote_mail(array $lead):void {
+    if(env('MAIL_TRANSPORT')==='disabled')return;
     if(env('MAIL_FROM')===''||env('QUOTE_NOTIFY_EMAIL')===''||(env('SMTP_HOST')===''&&env('MAIL_TRANSPORT')!=='mail'))return;
     $messages=[
         [env('QUOTE_NOTIFY_EMAIL'),'New quote request: '.$lead['name'],"Name: {$lead['name']}\nEmail: {$lead['email']}\nPhone: {$lead['phone']}\nProject: {$lead['project_type']}\nLocation: {$lead['location']}\n\n{$lead['message']}\n\nManage: ".env('SITE_URL').'/admin/leads'],
@@ -8,6 +9,7 @@ function queue_quote_mail(array $lead):void {
 }
 function deliver_mail(?callable $send=null):int {
     if($send===null){
+        if(env('MAIL_TRANSPORT')==='disabled')fail(422,'Email delivery is disabled.');
         if(!is_file(ROOT.'/vendor/autoload.php'))fail(500,'Install Composer dependencies for email delivery.');require_once ROOT.'/vendor/autoload.php';
         if(env('MAIL_FROM')===''||(env('SMTP_HOST')===''&&env('MAIL_TRANSPORT')!=='mail'))fail(500,'Configure email first.');
         $send=function(array $row):void {
