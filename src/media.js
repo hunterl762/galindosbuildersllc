@@ -38,7 +38,7 @@ export async function replaceMedia(db, cfg, id, file) {
     });
   }
 }
-export async function saveMedia(db, cfg, file, body) {
+export async function saveMedia(db, cfg, file, body, options = {}) {
   if (!file) throw httpError(422, "Choose an image to upload.");
   const type = await fileTypeFromBuffer(file.buffer);
   if (
@@ -53,6 +53,8 @@ export async function saveMedia(db, cfg, file, body) {
     ].includes(type.mime)
   )
     throw httpError(422, "Use a valid JPG, PNG, WebP, GIF or ICO image.");
+  if (options.allowedMimeTypes && !options.allowedMimeTypes.includes(type.mime))
+    throw httpError(422, "Use a JPG, PNG, WebP or GIF social media image.");
   const data = z
     .object({
       title: z.string().trim().max(255),
@@ -72,10 +74,19 @@ export async function saveMedia(db, cfg, file, body) {
     flag: "wx",
   });
   try {
-    await db.query(
-      "INSERT INTO media(id,url,title,alt_text,folder,mime_type,size_bytes) VALUES(?,?,?,?,?,?,?)",
-      [id, url, data.title, data.alt_text, data.folder, type.mime, file.size],
-    );
+    const persist = async (tx) => {
+      await tx.query(
+        "INSERT INTO media(id,url,title,alt_text,folder,mime_type,size_bytes) VALUES(?,?,?,?,?,?,?)",
+        [id, url, data.title, data.alt_text, data.folder, type.mime, file.size],
+      );
+      if (options.settingKey)
+        await tx.query(
+          "INSERT INTO site_settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)",
+          [options.settingKey, url],
+        );
+    };
+    if (options.settingKey) await db.transaction(persist);
+    else await persist(db);
   } catch (e) {
     await fs.unlink(path.join(cfg.uploadDir, "media", filename));
     throw e;

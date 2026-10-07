@@ -374,6 +374,48 @@ export function adminRouter(db, cfg) {
     await deleteMedia(db, cfg, req.params.id);
     res.redirect("/admin/media");
   });
+  router.post(
+    "/settings/images/:key",
+    allow("settings"),
+    (req, res, next) => {
+      if (!["favicon_url", "meta_image_url"].includes(req.params.key))
+        return next(httpError(422, "Choose a favicon or social media image."));
+      next();
+    },
+    upload,
+    async (req, res) => {
+      const key = req.params.key;
+      const title =
+        key === "favicon_url" ? "Website favicon" : "Social media image";
+      const mediaId = await saveMedia(
+        db,
+        cfg,
+        req.file,
+        {
+          title,
+          alt_text: title,
+          folder: "Branding",
+        },
+        {
+          settingKey: key,
+          ...(key === "meta_image_url"
+            ? {
+                allowedMimeTypes: [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp",
+                  "image/gif",
+                ],
+              }
+            : {}),
+        },
+      );
+      const [media] = await db.query("SELECT url FROM media WHERE id=?", [
+        mediaId,
+      ]);
+      res.status(201).json({ key, url: media.url, title });
+    },
+  );
   for (const [key, fields, permission] of [
     ["home", homeFields, "content"],
     ["settings", settingsFields, "settings"],

@@ -36,7 +36,7 @@ No production database or uploads are bundled in this repository. The automated 
 - **Leads:** New → Contacted → Estimate Scheduled → Quote Sent → Won/Lost, plus preserved Quoted/Closed legacy statuses. Assign requests to active accounts and add dated internal notes. The inbox shows the newest 500 matching requests; all records remain stored.
 - **Pages:** dedicated services, service areas and custom pages, HTML content with server-side sanitization, publication controls, CTAs, images and related service projects.
 - **SEO:** per-page titles/descriptions, canonical URLs, Open Graph images, robots controls, `/robots.txt`, `/sitemap.xml`, and JSON-LD structured data. Use `home` or `projects` as global SEO keys; other keys use the full path such as `/page/about`. Noindex and unpublished content are omitted from the sitemap. Custom canonical URLs are excluded to avoid duplicate listings.
-- **Settings:** company name/contact details, logo, favicon, social image, footer text. Image URL fields offer library URLs; upload branding through Media first.
+- **Settings:** company name/contact details, logo, favicon, social image, footer text. Favicon and social media images can be uploaded and applied directly in Settings & Branding, with previews. Uploaded images are also saved in the media library. Image URL fields still offer library URLs.
 - **Accounts:** owner (all controls), editor (content/media), sales (leads/email). Permissions are enforced on every request against the current SQL account. Disabled accounts lose access immediately, and password resets invalidate stored sessions. The last owner and your own owner access are protected.
 
 ## Email notifications

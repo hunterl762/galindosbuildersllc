@@ -294,6 +294,59 @@ test(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nXsAAAAASUVORK5CYII=",
         "base64",
       );
+      for (const key of ["favicon_url", "meta_image_url"]) {
+        const branding = await owner
+          .post(`/admin/settings/images/${key}`)
+          .set("x-csrf-token", csrf)
+          .attach("image", png, "branding.png");
+        assert.equal(branding.status, 201);
+        assert.equal(branding.body.key, key);
+        assert.match(branding.body.url, /^\/uploads\/media\//);
+        const [setting] = await db.query(
+          "SELECT setting_value FROM site_settings WHERE setting_key=?",
+          [key],
+        );
+        assert.equal(setting.setting_value, branding.body.url);
+        assert.equal(
+          (
+            await db.query(
+              "SELECT * FROM media WHERE url=? AND folder='Branding'",
+              [branding.body.url],
+            )
+          ).length,
+          1,
+        );
+      }
+      assert.match(
+        (await owner.get("/admin/settings")).text,
+        /data-branding-upload/,
+      );
+      assert.equal(
+        (
+          await owner
+            .post("/admin/settings/images/favicon_url")
+            .attach("image", png, "favicon.png")
+        ).status,
+        403,
+      );
+      assert.equal(
+        (
+          await owner
+            .post("/admin/settings/images/site_name")
+            .set("x-csrf-token", csrf)
+            .attach("image", png, "favicon.png")
+        ).status,
+        422,
+      );
+      assert.equal(
+        (
+          await owner
+            .post("/admin/settings/images/favicon_url")
+            .set("x-csrf-token", csrf)
+            .attach("image", Buffer.from("fake image"), "favicon.png")
+        ).status,
+        422,
+      );
       assert.equal(
         (
           await owner
@@ -466,6 +519,15 @@ test(
       editorPage = await editor.get("/admin");
       assert.equal((await editor.get("/admin/leads")).status, 403);
       assert.equal((await editor.get("/admin/settings")).status, 403);
+      assert.equal(
+        (
+          await editor
+            .post("/admin/settings/images/favicon_url")
+            .set("x-csrf-token", token(editorPage))
+            .attach("image", png, "favicon.png")
+        ).status,
+        403,
+      );
       assert.equal((await editor.get("/admin/projects")).status, 200);
       assert.equal(
         (

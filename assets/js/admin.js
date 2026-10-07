@@ -46,7 +46,23 @@ document.querySelectorAll("[data-upload]").forEach((uploadForm) =>
         );
       }
       const data = await response.json();
-      location.assign(data.redirect);
+      if (form.hasAttribute("data-branding-upload")) {
+        const field = document.querySelector(`input[name="${data.key}"]`);
+        if (field) field.value = data.url;
+        const preview = form.querySelector("[data-branding-preview] img");
+        preview.src = data.url;
+        preview.hidden = false;
+        const library = document.getElementById("library-urls");
+        if (library) {
+          const option = document.createElement("option");
+          option.value = data.url;
+          option.textContent = data.title;
+          library.append(option);
+        }
+        form.elements.image.value = "";
+        status.textContent = `${data.title} uploaded and applied.`;
+        button.disabled = false;
+      } else location.assign(data.redirect);
     } catch (error) {
       status.textContent = error.message;
       button.disabled = false;

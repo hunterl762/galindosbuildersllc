@@ -121,8 +121,7 @@
 <% }); %>
 </datalist>
 <section class="panel">
-<form class="form-grid" method="post" action="/admin/<%= key %>
-<%= mode==='edit'?'/save':'' %>">
+<form class="form-grid" method="post" action="/admin/<%= key %><%= mode==='edit'?'/save':'' %>">
 <input type="hidden" name="csrf" value="<%= csrf %>">
 <% if(mode==='edit'){ %>
 <input type="hidden" name="record_id" value="<%= record[resource.id||'id']||'' %>">
@@ -132,6 +131,24 @@
 </form>
 <p>Image URL fields offer images from the <a href="/admin/media">media library</a>.</p>
 </section>
+<% if(key==='settings'){ %>
+<section class="panel">
+<h2>Upload Branding Images</h2>
+<p>Upload and apply your favicon or social media image here. Each upload is saved immediately and added to the media library.</p>
+<% [['favicon_url','Favicon','image/png,image/jpeg,image/webp,image/gif,image/x-icon,image/vnd.microsoft.icon'],['meta_image_url','Social media image','image/png,image/jpeg,image/webp,image/gif']].forEach(([setting,label,accept])=>{ %>
+<form class="form-grid" action="/admin/settings/images/<%= setting %>" method="post" enctype="multipart/form-data" data-upload data-branding-upload>
+<input type="hidden" name="csrf" value="<%= csrf %>">
+<label class="full"><%= label %> upload (up to 10 MB)<input type="file" name="image" accept="<%= accept %>" required></label>
+<div class="branding-preview full" data-branding-preview>
+<span>Current <%= label %></span>
+<img class="<%= setting==='favicon_url'?'favicon-preview':'meta-preview' %>" alt="Current <%= label %>" <% if(record[setting]){ %>src="<%= record[setting] %>"<% }else{ %>hidden<% } %>>
+</div>
+<button>Upload &amp; Apply <%= label %></button>
+<p role="status" data-upload-status></p>
+</form>
+<% }); %>
+</section>
+<% } %>
 <% } %>
 <% if(mode==='edit'&&key==='projects'&&record.id){ %>
 <section class="panel">
