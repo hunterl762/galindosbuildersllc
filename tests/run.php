@@ -31,7 +31,9 @@ try{
     q("INSERT INTO pages(id,slug,title,content) VALUES('old-page','about','About','<h2>Approved content</h2>')");
     migrate();migrate();ok(q("SELECT name FROM projects WHERE id='legacy'")[0]['name']==='Legacy Project','Additive PHP migration preserves data on rerun');
     q('INSERT INTO admins(username,password_hash,role) VALUES(?,?,?)',['owner',password_hash_php('owner-password-123'),'owner']);
-    $command=[PHP_BINARY,'-n','-d','extension_dir='.ini_get('extension_dir'),'-d','extension=pdo_mysql','-d','extension=fileinfo','-d','extension=mbstring','-d','extension=openssl','-d','display_errors=0','-S','127.0.0.1:33080',ROOT.'/router.php'];
+    $command=[PHP_BINARY];
+    if(PHP_OS_FAMILY==='Windows')array_push($command,'-n','-d','extension_dir='.ini_get('extension_dir'),'-d','extension=pdo_mysql','-d','extension=fileinfo','-d','extension=mbstring','-d','extension=openssl');
+    array_push($command,'-d','display_errors=0','-S','127.0.0.1:33080',ROOT.'/router.php');
     $server=proc_open($command,[0=>['pipe','r'],1=>['file',$uploadDir.'/server.log','a'],2=>['file',$uploadDir.'/server.log','a']],$pipes,ROOT);
     for($i=0;$i<50;$i++){if(@fsockopen('127.0.0.1',33080,$errno,$errstr,0.1))break;usleep(100000);}
     $login=http('/admin/login');$csrf=token($login);ok(http('/admin/login',['csrf'=>$csrf,'username'=>'owner','password'=>'owner-password-123'])['status']===303,'Admin login');$csrf=token(http('/admin'));

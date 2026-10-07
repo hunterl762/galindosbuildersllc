@@ -11,7 +11,7 @@ $images=$p['images']??[];
 <?php public_head($site,$route,$p); ?>
 
 <section class="project-hero">
-<div class="project-hero-bg"<?php if(!empty($images[0])):?> style="background-image:linear-gradient(90deg,rgba(10,16,21,.88),rgba(10,16,21,.3)),url('<?=e($images[0])?>')"<?php endif;?>></div>
+<div class="project-hero-bg"><?php if(!empty($p['featured_image'])):?><img src="<?=e(image_url($p['featured_image']))?>" alt=""><?php endif;?></div>
 <div class="project-hero-content">
 <a class="project-back" href="<?=e(site_url('/projects'))?>">← ALL PROJECTS</a>
 <p class="eyebrow"><?=e($p['category']??'PROJECT')?></p>
