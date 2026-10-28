@@ -1,14 +1,12 @@
 <?php
 require __DIR__.'/includes/app.php';
 try{
-    boot();require ROOT.'/includes/content.php';require ROOT.'/includes/media.php';require ROOT.'/includes/migrate.php';
+    boot();require ROOT.'/includes/quote.php';require ROOT.'/includes/content.php';require ROOT.'/includes/media.php';require ROOT.'/includes/migrate.php';
     $route=rtrim(rawurldecode(parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)??'/'),'/')?:'/';
     if(str_starts_with($route,'/admin')){require ROOT.'/includes/admin.php';admin_dispatch($route);exit;}
     if(!q("SELECT version FROM schema_migrations WHERE version='003-php-runtime'"))redirect('/install.php',302);
     if($route==='/quote'&&$_SERVER['REQUEST_METHOD']==='POST'){
-        throttle('quotes',5,3600);$lead=validate(['name'=>['label'=>'Name','required'=>true,'max'=>255],'email'=>['label'=>'Email','type'=>'email','required'=>true,'max'=>255],'phone'=>['max'=>80],'project_type'=>['max'=>160],'location'=>['max'=>255],'message'=>['label'=>'Message','required'=>true,'max'=>10000]],$_POST);
-        if(mb_strlen($lead['message'])<10)fail(422,'Please include at least ten characters about your project.');
-        require ROOT.'/includes/mail.php';tx(function()use($lead){q("INSERT INTO quote_submissions(name,email,phone,project_type,location,message,status) VALUES(?,?,?,?,?,?,'New')",array_values($lead));queue_quote_mail($lead);});redirect('/?sent=1#contact');
+        submit_quote($_POST);redirect('/?sent=1#contact');
     }
     if($_SERVER['REQUEST_METHOD']!=='GET'&&$_SERVER['REQUEST_METHOD']!=='HEAD')fail(405,'Method not allowed.');
     if($route==='/index.php')redirect('/',301);
