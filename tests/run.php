@@ -16,11 +16,12 @@ $sample=['DB_HOST'=>'localhost','DB_PORT'=>'3306','DB_NAME'=>'account_galindos',
 ok(installer_configuration($sample)['COOKIE_SECURE']==='true','Installer configures secure HTTPS cookies');
 try{installer_configuration(array_merge($sample,['DB_HOST'=>'localhost;dbname=other']));throw new LogicException('DSN injection accepted');}catch(RuntimeException $ex){ok($ex->getCode()===422,'Installer rejects DSN injection');}
 foreach([1045=>'username or password',1049=>'does not exist',2002=>'cannot reach',1142=>'Privileges',1062=>'duplicate'] as $code=>$phrase){$error=new PDOException('Private credential details must not appear');$error->errorInfo=['HY000',$code,'Private credential details'];[$status,$message]=installation_error($error);ok(str_contains($message,$phrase)&&!str_contains($message,'Private credential'),'Safe installer diagnostic '.$code);}
+require ROOT.'/tests/quote.php';
 if(!getenv('TEST_DB_PORT')){echo "Database integration skipped; set TEST_DB_PORT to a disposable server.\n";exit;}
 $name='galindos_test_php_'.bin2hex(random_bytes(6));$port=getenv('TEST_DB_PORT');$databaseUser=getenv('TEST_DB_USER')?:'root';$databasePassword=getenv('TEST_DB_PASS')?:'';
 $admin=new PDO('mysql:host=127.0.0.1;port='.$port,$databaseUser,$databasePassword,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);$admin->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4");
 $uploadDir=sys_get_temp_dir().'/galindos-php-uploads-'.bin2hex(random_bytes(4));mkdir($uploadDir);
-foreach(['DB_HOST'=>'127.0.0.1','DB_PORT'=>$port,'DB_NAME'=>$name,'DB_USER'=>$databaseUser,'DB_PASS'=>$databasePassword,'UPLOAD_DIR'=>$uploadDir,'SITE_URL'=>'http://127.0.0.1:33080','SETUP_TOKEN'=>'test-setup-token','COOKIE_SECURE'=>'false','SMTP_HOST'=>'test.invalid','MAIL_FROM'=>'company@example.com','QUOTE_NOTIFY_EMAIL'=>'owner@example.com'] as $k=>$v)putenv($k.'='.$v);
+foreach(['DB_HOST'=>'127.0.0.1','DB_PORT'=>$port,'DB_NAME'=>$name,'DB_USER'=>$databaseUser,'DB_PASS'=>$databasePassword,'UPLOAD_DIR'=>$uploadDir,'SITE_URL'=>'http://127.0.0.1:33080','SETUP_TOKEN'=>'test-setup-token','COOKIE_SECURE'=>'false','TURNSTILE_SITE_KEY'=>'integration-site-key','TURNSTILE_SECRET_KEY'=>'integration-secret','TURNSTILE_HOSTNAMES'=>'127.0.0.1','SMTP_HOST'=>'test.invalid','MAIL_FROM'=>'company@example.com','QUOTE_NOTIFY_EMAIL'=>'owner@example.com'] as $k=>$v)putenv($k.'='.$v);
 $server=null;$cookies=[];
 function http(string $path,array $body=[],?string $upload=null,bool $includeCsrf=true,string $method=''):array {
     global $cookies;
@@ -65,7 +66,22 @@ try{
     ok(str_contains(http('/project/case-study')['text'],'Before photo'),'Case-study gallery rendering');
     ok(http('/admin/service-areas/save',['csrf'=>$csrf,'slug'=>'maryland','title'=>'Maryland','visible'=>'1','content'=>'<h2>Area</h2><script>bad()</script>'])['status']===303,'Service area save');ok(!str_contains(http('/service-areas/maryland')['text'],'bad()'),'Rich content safely rendered');
     ok(http('/admin/sections/values',['csrf'=>$csrf,'sort_order'=>'50'])['status']===303&&!str_contains(http('/')['text'],'class="values"'),'Homepage section visibility');
-    ok(http('/quote',['csrf'=>$csrf,'name'=>'Customer','email'=>'customer@example.com','message'=>'Please quote this project.'])['status']===303,'Quote capture');$lead=q('SELECT * FROM quote_submissions')[0];
+    $quote=['csrf'=>$csrf,'name'=>'Customer','email'=>'customer@example.com','message'=>'Please quote this project.'];
+    ok(str_contains(http('/')['text'],'data-action="quote"'),'HTTP quote widget rendering');
+    ok(str_contains(implode(' ',http('/')['headers']),"script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com;"),'CSP permits Turnstile script and frame');
+    ok(http('/quote',array_diff_key($quote,['csrf'=>true]))['status']===403,'Quote CSRF enforcement');
+    ok(http('/quote',$quote)['status']===422,'Direct POST without token rejected');
+    ok(http('/quote',array_merge($quote,['company_website'=>'spam','cf-turnstile-response'=>'unused']))['status']===422,'HTTP honeypot rejected');
+    ok(count(q('SELECT id FROM quote_submissions'))===0&&count(q('SELECT id FROM mail_outbox'))===0,'Rejected requests create no leads or email');
+    // Exercise the exact production handler with an isolated Siteverify response.
+    // Real browser token success/replay remains a staging check; no test bypass exists in HTTP.
+    $_SERVER['REMOTE_ADDR']='192.0.2.50';
+    submit_quote($quote+['cf-turnstile-response'=>'fresh-test-token'],fn()=>['success'=>true,'hostname'=>'127.0.0.1','action'=>'quote']);
+    ok(count(q('SELECT id FROM quote_submissions'))===1&&count(q('SELECT id FROM mail_outbox'))===2,'Verified quote atomically captures lead and both queued emails');
+    for($i=0;$i<3;$i++)ok(http('/quote',$quote)['status']===422,'Rejected attempts count toward shared IP limit');
+    ok(http('/quote',$quote)['status']===429,'Sixth HTTP quote attempt rate limited');
+    ok(count(q('SELECT id FROM quote_submissions'))===1&&count(q('SELECT id FROM mail_outbox'))===2,'Rate limit creates no leads or email');
+    $lead=q('SELECT * FROM quote_submissions')[0];
     ok(http('/admin/leads/'.$lead['id'],['csrf'=>$csrf,'status'=>'Estimate Scheduled','assigned_to'=>'1','note'=>'Call Tuesday'])['status']===303,'Lead assignment and notes');ok(q('SELECT note FROM lead_notes')[0]['note']==='Call Tuesday','Note preserved');
     $sent=[];deliver_mail(function($message)use(&$sent){$sent[]=$message;});ok(count($sent)===2,'Queued customer/company emails');
     ok(http('/admin/users',['csrf'=>$csrf,'username'=>'editor','password'=>'editor-password-123','role'=>'editor'])['status']===303,'Create editor');

@@ -83,8 +83,8 @@ function redirect(string $url,int $status=303):never {header('Location: '.$url,t
 function csrf():string {return $_SESSION['csrf']??=bin2hex(random_bytes(32));}
 function check_csrf():void {$value=$_SERVER['HTTP_X_CSRF_TOKEN']??$_POST['csrf']??'';if(!is_string($value)||!hash_equals(csrf(),$value))fail(403,'Invalid request token. Reload the page and try again.');}
 function csrf_input():void {echo '<input type="hidden" name="csrf" value="'.e(csrf()).'">';}
-function throttle(string $kind,int $limit,int $seconds):void {
-    $key=hash('sha256',$kind.':'.($_SERVER['REMOTE_ADDR']??'cli'));
+function throttle(string $kind,int $limit,int $seconds,?string $identity=null):void {
+    $key=hash('sha256',$kind.':'.($identity??($_SERVER['REMOTE_ADDR']??'cli')));
     $hits=tx(function()use($key,$seconds){q('INSERT IGNORE INTO request_limits(limit_key,hits,reset_at) VALUES(?,0,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND))',[$key,$seconds]);$r=q('SELECT hits,reset_at<=UTC_TIMESTAMP() AS expired FROM request_limits WHERE limit_key=? FOR UPDATE',[$key])[0];$hits=$r['expired']?1:(int)$r['hits']+1;q('UPDATE request_limits SET hits=?,reset_at=IF(?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND),reset_at) WHERE limit_key=?',[$hits,$r['expired'],$seconds,$key]);return $hits;});
     if($hits>$limit){header('Retry-After: '.$seconds);fail(429,'Too many attempts. Please try again later.');}
 }
@@ -92,7 +92,7 @@ function password_hash_php(string $password):string {if(strlen($password)<12||st
 function verify_password(string $password,string $hash):bool {return password_verify($password,str_replace('$2b$','$2y$',$hash));}
 function boot(bool $databaseSessions=true):void {
     header('X-Content-Type-Options: nosniff');header('Referrer-Policy: strict-origin-when-cross-origin');header('X-Frame-Options: SAMEORIGIN');
-    header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
     $secure=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')||env('COOKIE_SECURE')==='true';
     ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');ini_set('session.gc_maxlifetime','28800');session_name('GBPHPSESSID');
     session_set_cookie_params(['lifetime'=>28800,'path'=>'/','secure'=>$secure,'httponly'=>true,'samesite'=>'Lax']);

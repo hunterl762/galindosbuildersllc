@@ -30,6 +30,10 @@ The PHP conversion retains the Node CMS v2 schema and adds a separate `php_sessi
 
 Public routes: `/`, `/projects`, `/project/:slug`, `/page/:slug`, `/services/:slug`, `/service-areas/:slug`, `/robots.txt`, `/sitemap.xml`, and `/admin/*`. Old public `.php` query URLs redirect to the clean routes, and old admin GET bookmarks redirect to their current equivalents.
 
+## Contact / quote spam protection
+
+The public quote form requires Turnstile keys and an exact hostname allowlist before release. Enable PHP cURL and follow [configuration and staging checks](docs/quote-spam-protection.md). Missing keys disable online quote submission. The existing CSRF, SQL rate limits, lead/admin workflow and queued notifications are preserved.
+
 ## Email delivery
 
 The deployment ZIP bundles PHPMailer. Repository checkouts should run `composer install --no-dev --prefer-dist` first. Set `MAIL_FROM`, `QUOTE_NOTIFY_EMAIL` and SMTP settings in `.env`. SMTP uses verified TLS (STARTTLS on 587, implicit TLS with `SMTP_SECURE=true` on 465). Alternatively choose `MAIL_TRANSPORT=mail` to use the hosting provider's PHP mail transport if enabled.
